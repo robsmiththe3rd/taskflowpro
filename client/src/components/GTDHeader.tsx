@@ -1,12 +1,4 @@
-import { MessageSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
-
-interface GTDHeaderProps {
-  onToggleChat: () => void;
-  isChatOpen: boolean;
-}
-
-export default function GTDHeader({ onToggleChat, isChatOpen }: GTDHeaderProps) {
+export default function GTDHeader() {
   return (
     <div 
       className="relative text-white p-8 text-center overflow-hidden"
@@ -16,21 +8,7 @@ export default function GTDHeader({ onToggleChat, isChatOpen }: GTDHeaderProps) 
       <div className="absolute inset-0 bg-black/10"></div>
       
       <div className="relative z-10">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex-1"></div>
-          <h1 className="text-4xl font-bold">🚀 Getting Things Done System</h1>
-          <div className="flex-1 flex justify-end">
-            <Button
-              onClick={onToggleChat}
-              variant="outline"
-              size="icon"
-              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-              data-testid="button-toggle-chat"
-            >
-              <MessageSquare className="h-5 w-5" />
-            </Button>
-          </div>
-        </div>
+        <h1 className="text-4xl font-bold mb-6">🚀 Getting Things Done System</h1>
         
         <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 max-w-4xl mx-auto">
           <p className="text-lg font-medium mb-2">Life Purpose:</p>

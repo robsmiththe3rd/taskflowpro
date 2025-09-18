@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, X, Loader2 } from "lucide-react";
+import { Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -11,12 +11,7 @@ interface Message {
   timestamp: Date;
 }
 
-interface AIChatProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-export default function AIChat({ isOpen, onClose }: AIChatProps) {
+export default function AIChat() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -70,26 +65,15 @@ export default function AIChat({ isOpen, onClose }: AIChatProps) {
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed right-4 top-4 bottom-4 w-96 bg-card border border-card-border rounded-lg shadow-xl flex flex-col z-50">
+    <div className="bg-card border-t border-card-border flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-border flex items-center justify-between bg-gradient-to-r from-chart-4 to-chart-2 text-white rounded-t-lg">
-        <h3 className="font-semibold">AI Assistant</h3>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={onClose}
-          className="text-white hover:bg-white/10"
-          data-testid="button-close-chat"
-        >
-          <X className="h-4 w-4" />
-        </Button>
+      <div className="p-4 border-b border-border bg-gradient-to-r from-chart-4 to-chart-2 text-white">
+        <h3 className="font-semibold text-center">AI Assistant</h3>
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
+      <ScrollArea className="h-64 p-4" ref={scrollAreaRef}>
         <div className="space-y-4">
           {messages.map((message) => (
             <div

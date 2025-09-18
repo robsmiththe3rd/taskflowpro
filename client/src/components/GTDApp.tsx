@@ -109,7 +109,6 @@ const initialGoals = [
 
 export default function GTDApp() {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
-  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const handleToggleTask = (id: string, completed: boolean) => {
     setTasks(prevTasks => 
@@ -126,24 +125,19 @@ export default function GTDApp() {
     console.log(`Task ${id} marked as ${completed ? 'completed' : 'incomplete'}`);
   };
 
-  const handleToggleChat = () => {
-    setIsChatOpen(!isChatOpen);
-    console.log('Chat toggled:', !isChatOpen);
-  };
-
   const getTasksByCategory = (category: string) => {
     return tasks.filter(task => task.category === category);
   };
 
   return (
     <div 
-      className="min-h-screen"
+      className="min-h-screen flex flex-col"
       style={{ background: 'var(--gtd-gradient)' }}
     >
-      <div className="max-w-6xl mx-auto bg-background/95 backdrop-blur-sm rounded-xl shadow-2xl overflow-hidden m-4">
-        <GTDHeader onToggleChat={handleToggleChat} isChatOpen={isChatOpen} />
+      <div className="flex-1 max-w-6xl mx-auto bg-background/95 backdrop-blur-sm rounded-xl shadow-2xl overflow-hidden m-4 mb-0 flex flex-col">
+        <GTDHeader />
         
-        <div className="pb-6">
+        <div className="flex-1 pb-6 overflow-y-auto">
           {/* Vision & Goals Section */}
           <CollapsibleSection title="Vision & Goals" icon="🏔️">
             <div className="space-y-6">
@@ -256,9 +250,9 @@ export default function GTDApp() {
             />
           </CollapsibleSection>
         </div>
+        
+        <AIChat />
       </div>
-
-      <AIChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </div>
   );
 }
