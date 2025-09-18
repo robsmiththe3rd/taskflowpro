@@ -3,6 +3,7 @@ import { Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface Message {
   id: string;
@@ -12,6 +13,7 @@ interface Message {
 }
 
 export default function AIChat() {
+  const queryClient = useQueryClient();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -41,21 +43,50 @@ export default function AIChat() {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const messageText = inputValue;
     setInputValue("");
     setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const response = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: messageText })
+      });
+
+      const result = await response.json();
+
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
-        text: `I understand you want to: "${inputValue}". I've processed your request and added it to your GTD system. The change will appear in your task list shortly.`,
+        text: result.message || "I had trouble processing your request. Please try again.",
         isUser: false,
         timestamp: new Date(),
       };
+
       setMessages(prev => [...prev, aiResponse]);
-      setIsLoading(false);
-      console.log('AI Chat: Processing user request:', inputValue);
-    }, 1500);
+      
+      // Refresh data if something was created
+      if (result.action) {
+        if (result.action.type === 'task_created') {
+          queryClient.invalidateQueries({ queryKey: ['/api/tasks'] });
+        } else if (result.action.type === 'project_created') {
+          queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+        } else if (result.action.type === 'goal_created') {
+          queryClient.invalidateQueries({ queryKey: ['/api/goals'] });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      const errorResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        text: "Sorry, I couldn't process your request. Please try again.",
+        isUser: false,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorResponse]);
+    }
+
+    setIsLoading(false);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

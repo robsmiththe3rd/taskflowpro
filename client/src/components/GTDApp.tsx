@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Task } from "@shared/schema";
+import { useQuery } from "@tanstack/react-query";
+import { Task, Project, Goal } from "@shared/schema";
 import GTDHeader from "./GTDHeader";
 import CollapsibleSection from "./CollapsibleSection";
 import TaskSection from "./TaskSection";
@@ -7,127 +8,49 @@ import ProjectCard from "./ProjectCard";
 import GoalCard from "./GoalCard";
 import AIChat from "./AIChat";
 
-// Mock data to demonstrate the functionality - todo: remove mock functionality
-const initialTasks: Task[] = [
-  {
-    id: '1',
-    text: "Look at Bryan's stuff, learn the repositories, finish spreadsheet",
-    category: 'high_focus',
-    completed: false,
-    completedAt: null,
-    createdAt: new Date('2024-09-15'),
-  },
-  {
-    id: '2',
-    text: "Get to help tickets",
-    category: 'high_focus',
-    completed: false,
-    completedAt: null,
-    createdAt: new Date('2024-09-15'),
-  },
-  {
-    id: '3',
-    text: "Review Gabby's SOP edits",
-    category: 'high_focus',
-    completed: false,
-    completedAt: null,
-    createdAt: new Date('2024-09-15'),
-  },
-  {
-    id: '4',
-    text: "Talk with Gabby about the SOPs - Completed Tues 9/16 1:30pm",
-    category: 'quick_work',
-    completed: true,
-    completedAt: new Date('2024-09-16T13:30:00'),
-    createdAt: new Date('2024-09-15'),
-  },
-  {
-    id: '5',
-    text: "Enter help ticket for deliverable repositories table not working",
-    category: 'quick_work',
-    completed: false,
-    completedAt: null,
-    createdAt: new Date('2024-09-15'),
-  },
-  {
-    id: '6',
-    text: "Sign up for Visible phone plans for you and wife",
-    category: 'quick_personal',
-    completed: false,
-    completedAt: null,
-    createdAt: new Date('2024-09-15'),
-  },
-  {
-    id: '7',
-    text: "Research GTD communities to join",
-    category: 'quick_personal',
-    completed: false,
-    completedAt: null,
-    createdAt: new Date('2024-09-15'),
-  },
-];
-
-// Mock projects - todo: remove mock functionality
-const initialProjects = [
-  {
-    id: '1',
-    title: 'Home Office Organization',
-    status: 'active' as const,
-    notes: 'Create a productive workspace that supports focus and creativity',
-    createdAt: new Date('2024-09-10'),
-  },
-  {
-    id: '2',
-    title: 'Team Process Documentation',
-    status: 'active' as const,
-    notes: 'Document standard operating procedures for the team',
-    createdAt: new Date('2024-09-12'),
-  },
-];
-
-// Mock goals - todo: remove mock functionality
-const initialGoals = [
-  {
-    id: '1',
-    text: 'What does this transformation look like when it\'s working?',
-    timeframe: 'vision' as const,
-    createdAt: new Date('2024-09-01'),
-  },
-  {
-    id: '2',
-    text: 'Major milestones toward the vision',
-    timeframe: '3_5_year' as const,
-    createdAt: new Date('2024-09-01'),
-  },
-  {
-    id: '3',
-    text: 'Bobby established in Virginia and leading a happy, not all internal, life',
-    timeframe: '1_2_year' as const,
-    createdAt: new Date('2024-09-01'),
-  },
-];
 
 export default function GTDApp() {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  // Fetch all data from the API
+  const { data: tasks = [], isLoading: tasksLoading, refetch: refetchTasks } = useQuery<Task[]>({
+    queryKey: ['/api/tasks'],
+  });
 
-  const handleToggleTask = (id: string, completed: boolean) => {
-    setTasks(prevTasks => 
-      prevTasks.map(task => 
-        task.id === id 
-          ? { 
-              ...task, 
-              completed, 
-              completedAt: completed ? new Date() : null 
-            }
-          : task
-      )
-    );
-    console.log(`Task ${id} marked as ${completed ? 'completed' : 'incomplete'}`);
+  const { data: projects = [], isLoading: projectsLoading } = useQuery<Project[]>({
+    queryKey: ['/api/projects'],
+  });
+
+  const { data: goals = [], isLoading: goalsLoading } = useQuery<Goal[]>({
+    queryKey: ['/api/goals'],
+  });
+
+  const handleToggleTask = async (id: string, completed: boolean) => {
+    try {
+      await fetch(`/api/tasks/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completed })
+      });
+      refetchTasks();
+    } catch (error) {
+      console.error('Failed to toggle task:', error);
+    }
   };
 
   const getTasksByCategory = (category: string) => {
-    return tasks.filter(task => task.category === category);
+    return tasks.filter((task: Task) => task.category === category);
   };
+
+  // Show loading state
+  if (tasksLoading || projectsLoading || goalsLoading) {
+    return (
+      <div 
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: 'var(--gtd-gradient)' }}
+      >
+        <div className="text-white text-xl">Loading your GTD system...</div>
+      </div>
+    );
+  }
 
   return (
     <div 
@@ -145,9 +68,9 @@ export default function GTDApp() {
                 <h4 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
                   🏔️ 10-20 Year Vision
                 </h4>
-                {initialGoals
-                  .filter(goal => goal.timeframe === 'vision')
-                  .map(goal => (
+                {goals
+                  .filter((goal: Goal) => goal.timeframe === 'vision')
+                  .map((goal: Goal) => (
                     <GoalCard key={goal.id} goal={goal} />
                   ))
                 }
@@ -157,9 +80,9 @@ export default function GTDApp() {
                 <h4 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
                   🌟 3-5 Year Goals
                 </h4>
-                {initialGoals
-                  .filter(goal => goal.timeframe === '3_5_year')
-                  .map(goal => (
+                {goals
+                  .filter((goal: Goal) => goal.timeframe === '3_5_year')
+                  .map((goal: Goal) => (
                     <GoalCard key={goal.id} goal={goal} />
                   ))
                 }
@@ -169,9 +92,9 @@ export default function GTDApp() {
                 <h4 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
                   🌟 1-2 Year Goals
                 </h4>
-                {initialGoals
-                  .filter(goal => goal.timeframe === '1_2_year')
-                  .map(goal => (
+                {goals
+                  .filter((goal: Goal) => goal.timeframe === '1_2_year')
+                  .map((goal: Goal) => (
                     <GoalCard key={goal.id} goal={goal} />
                   ))
                 }
@@ -208,7 +131,7 @@ export default function GTDApp() {
           {/* Projects Section */}
           <CollapsibleSection title="Projects" icon="📁">
             <div className="space-y-4">
-              {initialProjects.map(project => (
+              {projects.map((project: Project) => (
                 <ProjectCard key={project.id} project={project} />
               ))}
             </div>

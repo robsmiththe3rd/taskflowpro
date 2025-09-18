@@ -1,4 +1,6 @@
-import { type User, type InsertUser, type Task, type InsertTask, type Project, type InsertProject, type Area, type InsertArea, type Goal, type InsertGoal } from "@shared/schema";
+import { type User, type InsertUser, type Task, type InsertTask, type Project, type InsertProject, type Area, type InsertArea, type Goal, type InsertGoal, gtdTasks, gtdProjects, gtdAreas, gtdGoals, users } from "@shared/schema";
+import { eq } from "drizzle-orm";
+import { db } from "./db";
 import { randomUUID } from "crypto";
 
 // GTD Storage Interface
@@ -130,6 +132,7 @@ export class MemStorage implements IStorage {
       ...insertTask, 
       id, 
       createdAt: new Date(),
+      completed: insertTask.completed ?? false,
       completedAt: insertTask.completed ? new Date() : null,
     };
     this.tasks.set(id, task);
@@ -160,7 +163,7 @@ export class MemStorage implements IStorage {
 
   async createProject(insertProject: InsertProject): Promise<Project> {
     const id = randomUUID();
-    const project: Project = { ...insertProject, id, createdAt: new Date() };
+    const project: Project = { ...insertProject, id, createdAt: new Date(), notes: insertProject.notes ?? null };
     this.projects.set(id, project);
     return project;
   }
@@ -184,7 +187,7 @@ export class MemStorage implements IStorage {
 
   async createArea(insertArea: InsertArea): Promise<Area> {
     const id = randomUUID();
-    const area: Area = { ...insertArea, id, createdAt: new Date() };
+    const area: Area = { ...insertArea, id, createdAt: new Date(), description: insertArea.description ?? null };
     this.areas.set(id, area);
     return area;
   }
@@ -244,4 +247,122 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Database Storage Implementation
+export class DatabaseStorage implements IStorage {
+  // Task methods
+  async getTasks(): Promise<Task[]> {
+    return await db.select().from(gtdTasks).orderBy(gtdTasks.createdAt);
+  }
+
+  async createTask(insertTask: InsertTask): Promise<Task> {
+    const [task] = await db.insert(gtdTasks).values(insertTask).returning();
+    return task;
+  }
+
+  async updateTask(id: string, updates: Partial<Task>): Promise<Task> {
+    const [task] = await db
+      .update(gtdTasks)
+      .set({
+        ...updates,
+        completedAt: updates.completed === true ? new Date() : (updates.completed === false ? null : undefined)
+      })
+      .where(eq(gtdTasks.id, id))
+      .returning();
+    if (!task) throw new Error('Task not found');
+    return task;
+  }
+
+  async deleteTask(id: string): Promise<void> {
+    await db.delete(gtdTasks).where(eq(gtdTasks.id, id));
+  }
+
+  // Project methods
+  async getProjects(): Promise<Project[]> {
+    return await db.select().from(gtdProjects).orderBy(gtdProjects.createdAt);
+  }
+
+  async createProject(insertProject: InsertProject): Promise<Project> {
+    const [project] = await db.insert(gtdProjects).values(insertProject).returning();
+    return project;
+  }
+
+  async updateProject(id: string, updates: Partial<Project>): Promise<Project> {
+    const [project] = await db
+      .update(gtdProjects)
+      .set(updates)
+      .where(eq(gtdProjects.id, id))
+      .returning();
+    if (!project) throw new Error('Project not found');
+    return project;
+  }
+
+  async deleteProject(id: string): Promise<void> {
+    await db.delete(gtdProjects).where(eq(gtdProjects.id, id));
+  }
+
+  // Area methods
+  async getAreas(): Promise<Area[]> {
+    return await db.select().from(gtdAreas).orderBy(gtdAreas.createdAt);
+  }
+
+  async createArea(insertArea: InsertArea): Promise<Area> {
+    const [area] = await db.insert(gtdAreas).values(insertArea).returning();
+    return area;
+  }
+
+  async updateArea(id: string, updates: Partial<Area>): Promise<Area> {
+    const [area] = await db
+      .update(gtdAreas)
+      .set(updates)
+      .where(eq(gtdAreas.id, id))
+      .returning();
+    if (!area) throw new Error('Area not found');
+    return area;
+  }
+
+  async deleteArea(id: string): Promise<void> {
+    await db.delete(gtdAreas).where(eq(gtdAreas.id, id));
+  }
+
+  // Goal methods
+  async getGoals(): Promise<Goal[]> {
+    return await db.select().from(gtdGoals).orderBy(gtdGoals.createdAt);
+  }
+
+  async createGoal(insertGoal: InsertGoal): Promise<Goal> {
+    const [goal] = await db.insert(gtdGoals).values(insertGoal).returning();
+    return goal;
+  }
+
+  async updateGoal(id: string, updates: Partial<Goal>): Promise<Goal> {
+    const [goal] = await db
+      .update(gtdGoals)
+      .set(updates)
+      .where(eq(gtdGoals.id, id))
+      .returning();
+    if (!goal) throw new Error('Goal not found');
+    return goal;
+  }
+
+  async deleteGoal(id: string): Promise<void> {
+    await db.delete(gtdGoals).where(eq(gtdGoals.id, id));
+  }
+
+  // Legacy user methods
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+}
+
+export const storage = new DatabaseStorage();
