@@ -7,9 +7,19 @@ import TaskSection from "./TaskSection";
 import ProjectCard from "./ProjectCard";
 import GoalCard from "./GoalCard";
 import AIChat from "./AIChat";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Plus } from "lucide-react";
+import AddProjectForm from "./forms/AddProjectForm";
+import AddGoalForm from "./forms/AddGoalForm";
 
 
 export default function GTDApp() {
+  // Dialog states for manual entry
+  const [isAddProjectDialogOpen, setIsAddProjectDialogOpen] = useState(false);
+  const [isAddGoalDialogOpen, setIsAddGoalDialogOpen] = useState(false);
+  const [goalTimeframe, setGoalTimeframe] = useState<string>('1_2_year');
+
   // Fetch all data from the API
   const { data: tasks = [], isLoading: tasksLoading, refetch: refetchTasks } = useQuery<Task[]>({
     queryKey: ['/api/tasks'],
@@ -65,39 +75,102 @@ export default function GTDApp() {
           <CollapsibleSection title="Vision & Goals" icon="🏔️">
             <div className="space-y-6">
               <div>
-                <h4 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                  🏔️ 10-20 Year Vision
+                <h4 className="text-lg font-semibold text-foreground mb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    🏔️ 10-20 Year Vision
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setGoalTimeframe('vision');
+                      setIsAddGoalDialogOpen(true);
+                    }}
+                    data-testid="button-add-goal-vision"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Vision
+                  </Button>
                 </h4>
-                {goals
-                  .filter((goal: Goal) => goal.timeframe === 'vision')
-                  .map((goal: Goal) => (
-                    <GoalCard key={goal.id} goal={goal} />
-                  ))
-                }
+                <div className="space-y-3">
+                  {goals
+                    .filter((goal: Goal) => goal.timeframe === 'vision')
+                    .map((goal: Goal) => (
+                      <GoalCard key={goal.id} goal={goal} />
+                    ))
+                  }
+                  {goals.filter((goal: Goal) => goal.timeframe === 'vision').length === 0 && (
+                    <div className="bg-card border border-card-border rounded-lg p-4 text-center text-muted-foreground">
+                      No vision goals yet
+                    </div>
+                  )}
+                </div>
               </div>
               
               <div>
-                <h4 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                  🌟 3-5 Year Goals
+                <h4 className="text-lg font-semibold text-foreground mb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    🌟 3-5 Year Goals
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setGoalTimeframe('3_5_year');
+                      setIsAddGoalDialogOpen(true);
+                    }}
+                    data-testid="button-add-goal-3-5-year"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Goal
+                  </Button>
                 </h4>
-                {goals
-                  .filter((goal: Goal) => goal.timeframe === '3_5_year')
-                  .map((goal: Goal) => (
-                    <GoalCard key={goal.id} goal={goal} />
-                  ))
-                }
+                <div className="space-y-3">
+                  {goals
+                    .filter((goal: Goal) => goal.timeframe === '3_5_year')
+                    .map((goal: Goal) => (
+                      <GoalCard key={goal.id} goal={goal} />
+                    ))
+                  }
+                  {goals.filter((goal: Goal) => goal.timeframe === '3_5_year').length === 0 && (
+                    <div className="bg-card border border-card-border rounded-lg p-4 text-center text-muted-foreground">
+                      No 3-5 year goals yet
+                    </div>
+                  )}
+                </div>
               </div>
               
               <div>
-                <h4 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                  🌟 1-2 Year Goals
+                <h4 className="text-lg font-semibold text-foreground mb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    🌟 1-2 Year Goals
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setGoalTimeframe('1_2_year');
+                      setIsAddGoalDialogOpen(true);
+                    }}
+                    data-testid="button-add-goal-1-2-year"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Goal
+                  </Button>
                 </h4>
-                {goals
-                  .filter((goal: Goal) => goal.timeframe === '1_2_year')
-                  .map((goal: Goal) => (
-                    <GoalCard key={goal.id} goal={goal} />
-                  ))
-                }
+                <div className="space-y-3">
+                  {goals
+                    .filter((goal: Goal) => goal.timeframe === '1_2_year')
+                    .map((goal: Goal) => (
+                      <GoalCard key={goal.id} goal={goal} />
+                    ))
+                  }
+                  {goals.filter((goal: Goal) => goal.timeframe === '1_2_year').length === 0 && (
+                    <div className="bg-card border border-card-border rounded-lg p-4 text-center text-muted-foreground">
+                      No 1-2 year goals yet
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </CollapsibleSection>
@@ -131,9 +204,29 @@ export default function GTDApp() {
           {/* Projects Section */}
           <CollapsibleSection title="Projects" icon="📁">
             <div className="space-y-4">
-              {projects.map((project: Project) => (
-                <ProjectCard key={project.id} project={project} />
-              ))}
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-lg font-semibold text-foreground">Active Projects</h4>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsAddProjectDialogOpen(true)}
+                  data-testid="button-add-project"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Project
+                </Button>
+              </div>
+              {projects.length > 0 ? (
+                <div className="space-y-4">
+                  {projects.map((project: Project) => (
+                    <ProjectCard key={project.id} project={project} />
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-card border border-card-border rounded-lg p-4 text-center text-muted-foreground">
+                  No projects yet
+                </div>
+              )}
             </div>
           </CollapsibleSection>
 
@@ -176,6 +269,22 @@ export default function GTDApp() {
         
         <AIChat />
       </div>
+      
+      {/* Manual Entry Dialogs */}
+      <Dialog open={isAddProjectDialogOpen} onOpenChange={setIsAddProjectDialogOpen}>
+        <DialogContent>
+          <AddProjectForm onClose={() => setIsAddProjectDialogOpen(false)} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isAddGoalDialogOpen} onOpenChange={setIsAddGoalDialogOpen}>
+        <DialogContent>
+          <AddGoalForm 
+            onClose={() => setIsAddGoalDialogOpen(false)}
+            defaultTimeframe={goalTimeframe}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
