@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertTaskSchema, insertProjectSchema, insertGoalSchema, insertAreaSchema } from "@shared/schema";
+import { processGTDCommand } from "./openai";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Task routes
@@ -184,80 +185,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Message is required" });
       }
 
-      // Simple pattern matching for GTD commands
-      let aiResponse = "I understand your request. ";
-      let action = null;
+      // Use OpenAI to process the GTD command
+      const { response: aiResponse, action } = await processGTDCommand(message);
+      let actionResult = null;
 
-      // Task creation patterns
-      if (message.toLowerCase().includes('add task') || message.toLowerCase().includes('create task')) {
-        const taskMatch = message.match(/add task:?\s*(.*?)\.?$/i) || message.match(/create task:?\s*(.*?)\.?$/i);
-        if (taskMatch) {
-          const taskText = taskMatch[1].trim();
-          // Determine category based on keywords
-          let category = 'quick_work'; // default
-          if (message.toLowerCase().includes('personal')) category = 'quick_personal';
-          else if (message.toLowerCase().includes('home')) category = 'home';
-          else if (message.toLowerCase().includes('important') || message.toLowerCase().includes('focus')) category = 'high_focus';
-          
-          try {
-            const task = await storage.createTask({
-              text: taskText,
-              category,
-              completed: false
-            });
-            action = { type: 'task_created', data: task };
-            aiResponse += `I've created a new task: "${taskText}" in your ${category.replace('_', ' ')} category.`;
-          } catch (error) {
-            aiResponse += "I had trouble creating that task. Please try again.";
-          }
+      // Execute the action if one was determined
+      if (action.type === 'task' && action.data) {
+        try {
+          const task = await storage.createTask({
+            text: action.data.text || '',
+            category: action.data.category || 'quick_work',
+            completed: false
+          });
+          actionResult = { type: 'task_created', data: task };
+        } catch (error) {
+          console.error('Task creation error:', error);
         }
-      }
-      // Project creation patterns
-      else if (message.toLowerCase().includes('add project') || message.toLowerCase().includes('create project')) {
-        const projectMatch = message.match(/(?:add|create) project:?\s*(.*?)\.?$/i);
-        if (projectMatch) {
-          const projectTitle = projectMatch[1].trim();
-          try {
-            const project = await storage.createProject({
-              title: projectTitle,
-              status: 'active',
-              notes: `Created via AI assistant`
-            });
-            action = { type: 'project_created', data: project };
-            aiResponse += `I've created a new project: "${projectTitle}" for you.`;
-          } catch (error) {
-            aiResponse += "I had trouble creating that project. Please try again.";
-          }
+      } else if (action.type === 'project' && action.data) {
+        try {
+          const project = await storage.createProject({
+            title: action.data.title || '',
+            status: action.data.status || 'active',
+            notes: action.data.notes || 'Created via AI assistant'
+          });
+          actionResult = { type: 'project_created', data: project };
+        } catch (error) {
+          console.error('Project creation error:', error);
         }
-      }
-      // Goal creation patterns
-      else if (message.toLowerCase().includes('add goal') || message.toLowerCase().includes('create goal')) {
-        const goalMatch = message.match(/(?:add|create) goal:?\s*(.*?)\.?$/i);
-        if (goalMatch) {
-          const goalText = goalMatch[1].trim();
-          let timeframe = '1_2_year'; // default
-          if (message.toLowerCase().includes('vision') || message.toLowerCase().includes('long term')) timeframe = 'vision';
-          else if (message.toLowerCase().includes('3') || message.toLowerCase().includes('5')) timeframe = '3_5_year';
-          
-          try {
-            const goal = await storage.createGoal({
-              text: goalText,
-              timeframe
-            });
-            action = { type: 'goal_created', data: goal };
-            aiResponse += `I've created a new ${timeframe.replace('_', '-')} goal: "${goalText}".`;
-          } catch (error) {
-            aiResponse += "I had trouble creating that goal. Please try again.";
-          }
+      } else if (action.type === 'goal' && action.data) {
+        try {
+          const goal = await storage.createGoal({
+            text: action.data.text || '',
+            timeframe: action.data.timeframe || '1_2_year'
+          });
+          actionResult = { type: 'goal_created', data: goal };
+        } catch (error) {
+          console.error('Goal creation error:', error);
         }
-      }
-      else {
-        aiResponse += "I can help you add tasks, projects, and goals. Try saying something like 'add task: research camping options' or 'create project for home improvement'.";
       }
 
       res.json({
         message: aiResponse,
-        action: action
+        action: actionResult
       });
     } catch (error) {
       console.error('AI chat error:', error);
