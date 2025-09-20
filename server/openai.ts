@@ -170,7 +170,7 @@ EXAMPLES:
 Be conversational and helpful in your responses while extracting the right action data.`;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-5", // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+      model: "gpt-4o-mini", // Using GPT-4o Mini for cost efficiency while maintaining excellent GTD task understanding
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userMessage }
