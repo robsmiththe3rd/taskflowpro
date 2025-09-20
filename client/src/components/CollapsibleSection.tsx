@@ -35,8 +35,8 @@ export default function CollapsibleSection({
       </button>
       
       <div 
-        className={`overflow-hidden transition-all duration-300 bg-muted/30 ${
-          isOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
+        className={`transition-all duration-300 bg-muted/30 ${
+          isOpen ? 'max-h-96 opacity-100 overflow-y-auto' : 'max-h-0 opacity-0 overflow-hidden'
         }`}
       >
         <div className="p-6">
