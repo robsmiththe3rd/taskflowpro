@@ -392,11 +392,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async reorderAreas(areaOrders: { id: string; order: number }[]): Promise<void> {
-    // Update all areas with their new order values in a transaction
-    for (const { id, order } of areaOrders) {
-      await db.update(gtdAreas)
-        .set({ order })
-        .where(eq(gtdAreas.id, id));
+    console.log('DatabaseStorage.reorderAreas called with:', areaOrders);
+    try {
+      // Update all areas with their new order values in a transaction
+      for (const { id, order } of areaOrders) {
+        console.log(`Updating area ${id} to order ${order}`);
+        const result = await db.update(gtdAreas)
+          .set({ order })
+          .where(eq(gtdAreas.id, id))
+          .returning();
+        console.log(`Update result for ${id}:`, result);
+      }
+      console.log('All area updates completed successfully');
+    } catch (error) {
+      console.error('Error in DatabaseStorage.reorderAreas:', error);
+      throw error;
     }
   }
 
