@@ -26,6 +26,7 @@ export const gtdAreas = pgTable("gtd_areas", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: text("title").notNull(),
   description: text("description"),
+  order: text("order").notNull().default("0"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
