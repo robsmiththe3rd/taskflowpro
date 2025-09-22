@@ -457,6 +457,72 @@ export default function GTDApp() {
                   )}
                 </div>
               </div>
+              
+              <div>
+                <h4 className="text-lg font-semibold text-foreground mb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    🔥 Quarterly Goals
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setGoalTimeframe('quarterly');
+                      setIsAddGoalDialogOpen(true);
+                    }}
+                    data-testid="button-add-goal-quarterly"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Goal
+                  </Button>
+                </h4>
+                <div className="space-y-3">
+                  {goals
+                    .filter((goal: Goal) => goal.timeframe === 'quarterly')
+                    .map((goal: Goal) => (
+                      <GoalCard key={goal.id} goal={goal} />
+                    ))
+                  }
+                  {goals.filter((goal: Goal) => goal.timeframe === 'quarterly').length === 0 && (
+                    <div className="bg-card border border-card-border rounded-lg p-4 text-center text-muted-foreground">
+                      No quarterly goals yet
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="text-lg font-semibold text-foreground mb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    ✅ Weekly Objectives
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setGoalTimeframe('weekly');
+                      setIsAddGoalDialogOpen(true);
+                    }}
+                    data-testid="button-add-goal-weekly"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Objective
+                  </Button>
+                </h4>
+                <div className="space-y-3">
+                  {goals
+                    .filter((goal: Goal) => goal.timeframe === 'weekly')
+                    .map((goal: Goal) => (
+                      <GoalCard key={goal.id} goal={goal} />
+                    ))
+                  }
+                  {goals.filter((goal: Goal) => goal.timeframe === 'weekly').length === 0 && (
+                    <div className="bg-card border border-card-border rounded-lg p-4 text-center text-muted-foreground">
+                      No weekly objectives yet
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </CollapsibleSection>
 
