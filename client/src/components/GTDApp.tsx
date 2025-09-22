@@ -9,9 +9,11 @@ import GoalCard from "./GoalCard";
 import AIChat from "./AIChat";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Plus } from "lucide-react";
+import { Plus, Edit, Trash2 } from "lucide-react";
 import AddProjectForm from "./forms/AddProjectForm";
 import AddGoalForm from "./forms/AddGoalForm";
+import AddAreaForm from "./forms/AddAreaForm";
+import EditAreaForm from "./forms/EditAreaForm";
 
 
 export default function GTDApp() {
@@ -19,6 +21,11 @@ export default function GTDApp() {
   const [isAddProjectDialogOpen, setIsAddProjectDialogOpen] = useState(false);
   const [isAddGoalDialogOpen, setIsAddGoalDialogOpen] = useState(false);
   const [goalTimeframe, setGoalTimeframe] = useState<string>('1_2_year');
+  
+  // Area dialog states
+  const [isAddAreaDialogOpen, setIsAddAreaDialogOpen] = useState(false);
+  const [isEditAreaDialogOpen, setIsEditAreaDialogOpen] = useState(false);
+  const [editingArea, setEditingArea] = useState<Area | null>(null);
 
   // Fetch all data from the API
   const { data: tasks = [], isLoading: tasksLoading, refetch: refetchTasks } = useQuery<Task[]>({
@@ -462,19 +469,77 @@ export default function GTDApp() {
 
           {/* Areas of Focus Section */}
           <CollapsibleSection title="Areas of Focus" icon="🎯">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="bg-card border border-card-border rounded-lg p-4">
-                <h4 className="font-semibold text-foreground mb-2">Career & Leadership</h4>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
-                  Building expertise and influence in transforming work culture
+                  Manage your areas of focus to organize projects and maintain clarity on different life domains.
                 </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsAddAreaDialogOpen(true)}
+                  data-testid="button-add-area"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Area
+                </Button>
               </div>
-              <div className="bg-card border border-card-border rounded-lg p-4">
-                <h4 className="font-semibold text-foreground mb-2">Personal Development</h4>
-                <p className="text-sm text-muted-foreground">
-                  Continuous learning and growth in productivity and leadership
-                </p>
-              </div>
+              
+              {areas.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {areas.map((area) => (
+                    <div key={area.id} className="bg-card border border-card-border rounded-lg p-4 group hover-elevate">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-foreground mb-2" data-testid={`area-title-${area.id}`}>
+                            {area.title}
+                          </h4>
+                          {area.description && (
+                            <p className="text-sm text-muted-foreground" data-testid={`area-description-${area.id}`}>
+                              {area.description}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => {
+                              setEditingArea(area);
+                              setIsEditAreaDialogOpen(true);
+                            }}
+                            data-testid={`button-edit-area-${area.id}`}
+                            title="Edit area"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => {
+                              // TODO: Add delete confirmation
+                              console.log('Delete area:', area.id);
+                            }}
+                            data-testid={`button-delete-area-${area.id}`}
+                            title="Delete area"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-card border border-card-border rounded-lg p-8 text-center text-muted-foreground">
+                  <div className="space-y-2">
+                    <p>No areas of focus yet</p>
+                    <p className="text-sm">Areas help you organize projects and maintain clarity on different life domains.</p>
+                  </div>
+                </div>
+              )}
             </div>
           </CollapsibleSection>
 
@@ -513,6 +578,27 @@ export default function GTDApp() {
             onClose={() => setIsAddGoalDialogOpen(false)}
             defaultTimeframe={goalTimeframe}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Area Dialogs */}
+      <Dialog open={isAddAreaDialogOpen} onOpenChange={setIsAddAreaDialogOpen}>
+        <DialogContent>
+          <AddAreaForm onClose={() => setIsAddAreaDialogOpen(false)} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isEditAreaDialogOpen} onOpenChange={setIsEditAreaDialogOpen}>
+        <DialogContent>
+          {editingArea && (
+            <EditAreaForm 
+              area={editingArea}
+              onClose={() => {
+                setIsEditAreaDialogOpen(false);
+                setEditingArea(null);
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>
