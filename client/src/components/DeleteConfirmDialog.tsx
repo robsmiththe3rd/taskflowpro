@@ -51,14 +51,9 @@ export default function DeleteConfirmDialog({ type, itemId, itemName, onClose }:
       <DialogHeader>
         <DialogTitle>Delete {type.charAt(0).toUpperCase() + type.slice(1)}</DialogTitle>
         <DialogDescription>
-          Are you sure you want to delete "{itemName}"? This action cannot be undone.
+          This will permanently remove the {type} from your GTD system.
         </DialogDescription>
       </DialogHeader>
-      <DialogContent>
-        <p className="text-muted-foreground text-sm">
-          This will permanently remove the {type} from your GTD system.
-        </p>
-      </DialogContent>
       <DialogFooter>
         <Button 
           variant="outline" 
