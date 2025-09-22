@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { DialogHeader, DialogTitle, DialogContent, DialogFooter } from "@/components/ui/dialog";
+import { DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
 interface AddAreaFormProps {
@@ -64,7 +64,7 @@ export default function AddAreaForm({ onClose }: AddAreaFormProps) {
         <DialogTitle>Add New Area of Focus</DialogTitle>
       </DialogHeader>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-        <DialogContent className="space-y-4">
+        <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="title">
               Title <span className="text-destructive">*</span>
@@ -93,7 +93,7 @@ export default function AddAreaForm({ onClose }: AddAreaFormProps) {
               <p className="text-sm text-destructive">{form.formState.errors.description.message}</p>
             )}
           </div>
-        </DialogContent>
+        </div>
 
         <DialogFooter className="gap-2">
           <Button
