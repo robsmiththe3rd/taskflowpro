@@ -607,9 +607,6 @@ export default function GTDApp() {
                           } ${
                             dragOverAreaId === area.id ? 'ring-2 ring-primary ring-offset-2' : ''
                           }`}
-                          draggable
-                          onDragStart={(e) => handleAreaSortDragStart(e, area.id)}
-                          onDragEnd={handleAreaSortDragEnd}
                           onDragOver={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
@@ -624,7 +621,12 @@ export default function GTDApp() {
                         >
                           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <div className="flex items-center gap-3 flex-1 min-w-0">
-                              <div className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
+                              <div 
+                                className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+                                draggable
+                                onDragStart={(e) => handleAreaSortDragStart(e, area.id)}
+                                onDragEnd={handleAreaSortDragEnd}
+                              >
                                 <GripVertical className="h-4 w-4" />
                               </div>
                               <div className="space-y-1 flex-1 min-w-0">
