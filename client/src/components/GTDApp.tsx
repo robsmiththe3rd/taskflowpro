@@ -202,7 +202,7 @@ export default function GTDApp() {
           </CollapsibleSection>
 
           {/* Projects Section */}
-          <CollapsibleSection title="Projects" icon="📁">
+          <CollapsibleSection title="Projects" icon="🚀">
             <div className="space-y-4">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="text-lg font-semibold text-foreground">Active Projects</h4>
