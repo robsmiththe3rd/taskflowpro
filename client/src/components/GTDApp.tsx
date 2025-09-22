@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Task, Project, Goal, Area } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
 import GTDHeader from "./GTDHeader";
 import CollapsibleSection from "./CollapsibleSection";
 import TaskSection from "./TaskSection";
@@ -10,7 +11,7 @@ import AIChat from "./AIChat";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, GripVertical } from "lucide-react";
 import AddProjectForm from "./forms/AddProjectForm";
 import AddGoalForm from "./forms/AddGoalForm";
 import AddAreaForm from "./forms/AddAreaForm";
@@ -19,6 +20,9 @@ import DeleteConfirmDialog from "./DeleteConfirmDialog";
 
 
 export default function GTDApp() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  
   // Dialog states for manual entry
   const [isAddProjectDialogOpen, setIsAddProjectDialogOpen] = useState(false);
   const [isAddGoalDialogOpen, setIsAddGoalDialogOpen] = useState(false);
@@ -48,10 +52,42 @@ export default function GTDApp() {
     queryKey: ['/api/areas'],
   });
 
+  // Mutation for reordering areas
+  const reorderAreasMutation = useMutation({
+    mutationFn: async (areaOrders: { id: string; order: number }[]) => {
+      const response = await fetch('/api/areas/reorder', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ areaOrders }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to reorder areas');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/areas'] });
+      toast({
+        title: "Areas reordered",
+        description: "Areas have been successfully reordered.",
+      });
+    },
+    onError: (error) => {
+      console.error('Error reordering areas:', error);
+      toast({
+        title: "Error",
+        description: "Failed to reorder areas. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Filter states
   const [selectedAreaIds, setSelectedAreaIds] = useState<string[]>([]);
   const [areaFilterOrder, setAreaFilterOrder] = useState<string[]>([]);
   const [draggedAreaId, setDraggedAreaId] = useState<string | null>(null);
+  const [draggedSortAreaId, setDraggedSortAreaId] = useState<string | null>(null);
+  const [dragOverAreaId, setDragOverAreaId] = useState<string | null>(null);
 
   const handleToggleTask = async (id: string, completed: boolean) => {
     try {
@@ -174,6 +210,74 @@ export default function GTDApp() {
     });
     
     setDraggedAreaId(null);
+  };
+
+  // Drag and drop handlers for area sorting
+  const handleAreaSortDragStart = (e: React.DragEvent, areaId: string) => {
+    setDraggedSortAreaId(areaId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', areaId);
+    console.log('Drag started for area:', areaId);
+  };
+
+  const handleAreaSortDragEnd = () => {
+    setDraggedSortAreaId(null);
+    setDragOverAreaId(null);
+    console.log('Drag ended, cleanup completed');
+  };
+
+
+  const handleAreaSortDragLeave = (e: React.DragEvent) => {
+    // Only clear if we're actually leaving the element
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setDragOverAreaId(null);
+    }
+  };
+
+  const handleAreaSortDrop = (e: React.DragEvent, targetAreaId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('Drop event triggered. Target:', targetAreaId, 'Dragged:', draggedSortAreaId);
+    
+    if (!draggedSortAreaId || draggedSortAreaId === targetAreaId) {
+      setDraggedSortAreaId(null);
+      setDragOverAreaId(null);
+      return;
+    }
+
+    // Find the current order of areas
+    const sortedAreas = [...areas].sort((a, b) => a.order - b.order);
+    
+    const draggedIndex = sortedAreas.findIndex(area => area.id === draggedSortAreaId);
+    const targetIndex = sortedAreas.findIndex(area => area.id === targetAreaId);
+    
+    if (draggedIndex === -1 || targetIndex === -1) {
+      console.error('Could not find dragged or target area');
+      setDraggedSortAreaId(null);
+      setDragOverAreaId(null);
+      return;
+    }
+
+    console.log('Reordering areas. From index:', draggedIndex, 'to index:', targetIndex);
+
+    // Create new order array
+    const newOrder = [...sortedAreas];
+    const [draggedArea] = newOrder.splice(draggedIndex, 1);
+    newOrder.splice(targetIndex, 0, draggedArea);
+    
+    // Generate new order values
+    const areaOrders = newOrder.map((area, index) => ({
+      id: area.id,
+      order: index + 1
+    }));
+    
+    console.log('Sending reorder request:', areaOrders);
+    
+    // Send the reorder request
+    reorderAreasMutation.mutate(areaOrders);
+    setDraggedSortAreaId(null);
+    setDragOverAreaId(null);
   };
 
   const sortedProjects = getSortedProjects();
@@ -491,50 +595,81 @@ export default function GTDApp() {
               
               {areas.length > 0 ? (
                 <div className="space-y-4">
-                  {areas.map((area) => (
-                    <Card key={area.id} className="group hover-elevate transition-all duration-200">
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <div className="space-y-1 flex-1 min-w-0">
-                          <CardTitle className="text-lg font-semibold" data-testid={`area-title-${area.id}`}>
-                            {area.title}
-                          </CardTitle>
-                          {area.description && (
-                            <CardDescription data-testid={`area-description-${area.id}`}>
-                              {area.description}
-                            </CardDescription>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => {
-                              setEditingArea(area);
-                              setIsEditAreaDialogOpen(true);
-                            }}
-                            data-testid={`button-edit-area-${area.id}`}
-                            title="Edit area"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive"
-                            onClick={() => {
-                              setDeletingArea(area);
-                              setIsDeleteAreaDialogOpen(true);
-                            }}
-                            data-testid={`button-delete-area-${area.id}`}
-                            title="Delete area"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </CardHeader>
-                    </Card>
-                  ))}
+                  {areas
+                    .sort((a, b) => a.order - b.order)
+                    .map((area) => {
+                      const isDragging = draggedSortAreaId === area.id;
+                      return (
+                        <Card 
+                          key={area.id} 
+                          className={`group hover-elevate transition-all duration-200 ${
+                            isDragging ? 'opacity-50 scale-95' : ''
+                          } ${
+                            dragOverAreaId === area.id ? 'ring-2 ring-primary ring-offset-2' : ''
+                          }`}
+                          draggable
+                          onDragStart={(e) => handleAreaSortDragStart(e, area.id)}
+                          onDragEnd={handleAreaSortDragEnd}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            e.dataTransfer.dropEffect = 'move';
+                            if (draggedSortAreaId && draggedSortAreaId !== area.id) {
+                              setDragOverAreaId(area.id);
+                            }
+                          }}
+                          onDragLeave={handleAreaSortDragLeave}
+                          onDrop={(e) => handleAreaSortDrop(e, area.id)}
+                          data-testid={`card-area-${area.id}`}
+                        >
+                          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <div className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
+                                <GripVertical className="h-4 w-4" />
+                              </div>
+                              <div className="space-y-1 flex-1 min-w-0">
+                                <CardTitle className="text-lg font-semibold" data-testid={`area-title-${area.id}`}>
+                                  {area.title}
+                                </CardTitle>
+                                {area.description && (
+                                  <CardDescription data-testid={`area-description-${area.id}`}>
+                                    {area.description}
+                                  </CardDescription>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => {
+                                  setEditingArea(area);
+                                  setIsEditAreaDialogOpen(true);
+                                }}
+                                data-testid={`button-edit-area-${area.id}`}
+                                title="Edit area"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                onClick={() => {
+                                  setDeletingArea(area);
+                                  setIsDeleteAreaDialogOpen(true);
+                                }}
+                                data-testid={`button-delete-area-${area.id}`}
+                                title="Delete area"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </CardHeader>
+                        </Card>
+                      );
+                    })}
                 </div>
               ) : (
                 <Card className="text-center text-muted-foreground">
