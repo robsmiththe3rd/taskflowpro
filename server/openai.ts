@@ -21,6 +21,7 @@ export interface GTDAction {
     status?: string;
     notes?: string;
     areaId?: string;
+    projectId?: string;
   };
 }
 
