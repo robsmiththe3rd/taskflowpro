@@ -19,6 +19,8 @@ const goalTimeframes = [
   { value: 'vision', label: '10-20 Year Vision' },
   { value: '3_5_year', label: '3-5 Year Goals' },
   { value: '1_2_year', label: '1-2 Year Goals' },
+  { value: 'quarterly', label: 'Quarterly Goals' },
+  { value: 'weekly', label: 'Weekly Objectives' },
 ];
 
 export default function AddGoalForm({ onClose, defaultTimeframe = '1_2_year' }: AddGoalFormProps) {
