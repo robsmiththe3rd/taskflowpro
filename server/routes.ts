@@ -91,6 +91,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get tasks for a specific project
+  app.get("/api/projects/:id/tasks", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const tasks = await storage.getTasksByProject(id);
+      res.json(tasks);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get project tasks" });
+    }
+  });
+
   // Goal routes
   app.get("/api/goals", async (_req, res) => {
     try {
@@ -218,6 +229,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const actionResults = [];
 
       // Execute all actions
+      let createdProjectId: string | null = null;
+      
       for (const action of actions) {
         if (action.type === 'task' && action.data) {
           try {
@@ -231,7 +244,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const task = await storage.createTask({
               text: taskText,
               category: action.data.category || 'quick_work',
-              completed: false
+              completed: false,
+              projectId: action.data.projectId || createdProjectId || null
             });
             actionResults.push({ type: 'task_created', data: task });
           } catch (error) {
@@ -252,6 +266,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               notes: action.data.notes || 'Created via AI assistant',
               areaId: action.data.areaId || null
             });
+            createdProjectId = project.id; // Track the project ID for subsequent tasks
             actionResults.push({ type: 'project_created', data: project });
           } catch (error) {
             console.error('Project creation error:', error);

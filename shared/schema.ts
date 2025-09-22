@@ -10,6 +10,7 @@ export const gtdTasks = pgTable("gtd_tasks", {
   category: text("category").notNull(), // "high_focus", "quick_work", "quick_personal", "home", "waiting_for", "someday"
   completed: boolean("completed").notNull().default(false),
   completedAt: timestamp("completed_at"),
+  projectId: varchar("project_id"), // Optional foreign key to gtdProjects
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

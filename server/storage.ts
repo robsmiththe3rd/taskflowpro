@@ -7,6 +7,7 @@ import { randomUUID } from "crypto";
 export interface IStorage {
   // Tasks
   getTasks(): Promise<Task[]>;
+  getTasksByProject(projectId: string): Promise<Task[]>;
   createTask(task: InsertTask): Promise<Task>;
   updateTask(id: string, updates: Partial<Task>): Promise<Task>;
   deleteTask(id: string): Promise<void>;
@@ -63,6 +64,7 @@ export class MemStorage implements IStorage {
         category: "high_focus",
         completed: false,
         completedAt: null,
+        projectId: null,
         createdAt: new Date(),
       },
       {
@@ -71,6 +73,7 @@ export class MemStorage implements IStorage {
         category: "high_focus",
         completed: false,
         completedAt: null,
+        projectId: null,
         createdAt: new Date(),
       },
       {
@@ -79,6 +82,7 @@ export class MemStorage implements IStorage {
         category: "high_focus",
         completed: false,
         completedAt: null,
+        projectId: null,
         createdAt: new Date(),
       },
       {
@@ -87,6 +91,7 @@ export class MemStorage implements IStorage {
         category: "quick_work",
         completed: true,
         completedAt: new Date('2024-09-16T13:30:00'),
+        projectId: null,
         createdAt: new Date(),
       },
       {
@@ -95,6 +100,7 @@ export class MemStorage implements IStorage {
         category: "quick_personal",
         completed: false,
         completedAt: null,
+        projectId: null,
         createdAt: new Date(),
       },
       {
@@ -103,6 +109,7 @@ export class MemStorage implements IStorage {
         category: "quick_personal",
         completed: false,
         completedAt: null,
+        projectId: null,
         createdAt: new Date(),
       },
     ];
@@ -161,6 +168,12 @@ export class MemStorage implements IStorage {
     return Array.from(this.tasks.values()).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
+  async getTasksByProject(projectId: string): Promise<Task[]> {
+    return Array.from(this.tasks.values())
+      .filter(task => task.projectId === projectId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
   async createTask(insertTask: InsertTask): Promise<Task> {
     const id = randomUUID();
     const task: Task = { 
@@ -169,6 +182,7 @@ export class MemStorage implements IStorage {
       createdAt: new Date(),
       completed: insertTask.completed ?? false,
       completedAt: insertTask.completed ? new Date() : null,
+      projectId: insertTask.projectId ?? null,
     };
     this.tasks.set(id, task);
     return task;
@@ -311,6 +325,10 @@ export class DatabaseStorage implements IStorage {
   // Task methods
   async getTasks(): Promise<Task[]> {
     return await db.select().from(gtdTasks).orderBy(gtdTasks.createdAt);
+  }
+
+  async getTasksByProject(projectId: string): Promise<Task[]> {
+    return await db.select().from(gtdTasks).where(eq(gtdTasks.projectId, projectId)).orderBy(gtdTasks.createdAt);
   }
 
   async createTask(insertTask: InsertTask): Promise<Task> {
