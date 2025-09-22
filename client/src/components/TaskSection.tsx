@@ -3,7 +3,7 @@ import { Task } from "@shared/schema";
 import TaskItem from "./TaskItem";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Plus, ChevronRight } from "lucide-react";
+import { Plus, ChevronRight, Target, Zap, User, Home, Clock, Moon, Clipboard } from "lucide-react";
 import AddTaskForm from "@/components/forms/AddTaskForm";
 
 interface TaskSectionProps {
@@ -45,6 +45,8 @@ export default function TaskSection({ title, tasks, onToggleTask, category, defa
             onClick={() => setIsExpanded(!isExpanded)}
             className="flex items-center gap-2 p-2 hover:bg-accent/50 rounded-md transition-colors flex-1 min-w-0"
             data-testid={`button-toggle-${getCategoryFromTitle(title)}`}
+            aria-expanded={isExpanded}
+            aria-controls={`task-section-content-${getCategoryFromTitle(title)}`}
           >
             <ChevronRight 
               className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
@@ -67,15 +69,13 @@ export default function TaskSection({ title, tasks, onToggleTask, category, defa
           </Button>
         </div>
         
-        <div 
-          className={`transition-all duration-300 ${
-            isExpanded ? 'max-h-96 opacity-100 mt-3' : 'max-h-0 opacity-0 overflow-hidden'
-          }`}
-        >
-          <div className="bg-card border border-card-border rounded-lg p-4 text-center text-muted-foreground">
-            No tasks in this category yet
+        {isExpanded && (
+          <div className="mt-3 transition-opacity duration-300" id={`task-section-content-${getCategoryFromTitle(title)}`}>
+            <div className="bg-card border border-card-border rounded-lg p-4 text-center text-muted-foreground">
+              No tasks in this category yet
+            </div>
           </div>
-        </div>
+        )}
         
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogContent>
@@ -96,6 +96,8 @@ export default function TaskSection({ title, tasks, onToggleTask, category, defa
           onClick={() => setIsExpanded(!isExpanded)}
           className="flex items-center gap-2 p-2 hover:bg-accent/50 rounded-md transition-colors flex-1 min-w-0"
           data-testid={`button-toggle-${getCategoryFromTitle(title)}`}
+          aria-expanded={isExpanded}
+          aria-controls={`task-section-content-${getCategoryFromTitle(title)}`}
         >
           <ChevronRight 
             className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
@@ -119,21 +121,19 @@ export default function TaskSection({ title, tasks, onToggleTask, category, defa
         </Button>
       </div>
       
-      <div 
-        className={`transition-all duration-300 ${
-          isExpanded ? 'max-h-96 opacity-100 overflow-y-auto mt-3' : 'max-h-0 opacity-0 overflow-hidden'
-        }`}
-      >
-        <div className="bg-card border border-card-border rounded-lg overflow-hidden">
-          {tasks.map(task => (
-            <TaskItem 
-              key={task.id}
-              task={task}
-              onToggle={onToggleTask}
-            />
-          ))}
+      {isExpanded && (
+        <div className="mt-3 transition-opacity duration-300" id={`task-section-content-${getCategoryFromTitle(title)}`}>
+          <div className="bg-card border border-card-border rounded-lg overflow-hidden max-h-96 overflow-y-auto">
+            {tasks.map(task => (
+              <TaskItem 
+                key={task.id}
+                task={task}
+                onToggle={onToggleTask}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
       
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent>
@@ -147,22 +147,24 @@ export default function TaskSection({ title, tasks, onToggleTask, category, defa
   );
 }
 
-function getCategoryIcon(category: string): string {
+function getCategoryIcon(category: string) {
+  const iconSize = "h-4 w-4";
+  
   switch (category.toLowerCase().replace(/\s+/g, '_')) {
     case 'high_focus':
     case 'high_focus/important':
-      return '🎯';
+      return <Target className={iconSize} />;
     case 'quick_work':
-      return '⚡';
+      return <Zap className={iconSize} />;
     case 'quick_personal':
-      return '🏃';
+      return <User className={iconSize} />;
     case 'home':
-      return '🏠';
+      return <Home className={iconSize} />;
     case 'waiting_for':
-      return '⏳';
+      return <Clock className={iconSize} />;
     case 'someday':
-      return '🌙';
+      return <Moon className={iconSize} />;
     default:
-      return '📋';
+      return <Clipboard className={iconSize} />;
   }
 }
