@@ -117,14 +117,14 @@ export default function EditProjectForm({ project, onClose }: EditProjectFormPro
           <div className="space-y-2">
             <Label htmlFor="project-area">Area of Focus (Optional)</Label>
             <Select
-              value={form.watch('areaId') || ''}
-              onValueChange={(value) => form.setValue('areaId', value || undefined)}
+              value={form.watch('areaId') || 'none'}
+              onValueChange={(value) => form.setValue('areaId', value === 'none' ? undefined : value)}
             >
               <SelectTrigger data-testid="select-edit-project-area">
                 <SelectValue placeholder="Select area of focus" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="none">None</SelectItem>
                 {areas.map(area => (
                   <SelectItem key={area.id} value={area.id}>
                     {area.title}

@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Task, Project, Goal } from "@shared/schema";
+import { Task, Project, Goal, Area } from "@shared/schema";
 import GTDHeader from "./GTDHeader";
 import CollapsibleSection from "./CollapsibleSection";
 import TaskSection from "./TaskSection";
@@ -33,6 +33,15 @@ export default function GTDApp() {
     queryKey: ['/api/goals'],
   });
 
+  const { data: areas = [], isLoading: areasLoading } = useQuery<Area[]>({
+    queryKey: ['/api/areas'],
+  });
+
+  // Filter states
+  const [selectedAreaIds, setSelectedAreaIds] = useState<string[]>([]);
+  const [areaFilterOrder, setAreaFilterOrder] = useState<string[]>([]);
+  const [draggedAreaId, setDraggedAreaId] = useState<string | null>(null);
+
   const handleToggleTask = async (id: string, completed: boolean) => {
     try {
       await fetch(`/api/tasks/${id}`, {
@@ -50,8 +59,126 @@ export default function GTDApp() {
     return tasks.filter((task: Task) => task.category === category);
   };
 
+  // Get areas that have projects assigned
+  const getAreasWithProjects = () => {
+    const areaIds = new Set(projects.filter(p => p.areaId).map(p => p.areaId));
+    return areas.filter(area => areaIds.has(area.id));
+  };
+
+  // Get filtered projects based on selected areas
+  const getFilteredProjects = () => {
+    if (selectedAreaIds.length === 0) {
+      return projects;
+    }
+    return projects.filter(project => 
+      selectedAreaIds.includes(project.areaId || '')
+    );
+  };
+
+  // Sort projects by area filter order and then by area
+  const getSortedProjects = () => {
+    const filteredProjects = getFilteredProjects();
+    
+    // Sort by area filter order (leftmost filter = topmost projects)
+    const projectsCopy = [...filteredProjects];
+    return projectsCopy.sort((a, b) => {
+      const aAreaIndex = areaFilterOrder.indexOf(a.areaId || '');
+      const bAreaIndex = areaFilterOrder.indexOf(b.areaId || '');
+      
+      // Projects without area come first
+      if (!a.areaId && b.areaId) return -1;
+      if (a.areaId && !b.areaId) return 1;
+      if (!a.areaId && !b.areaId) return 0;
+      
+      // Sort by filter order
+      if (aAreaIndex !== bAreaIndex) {
+        if (aAreaIndex === -1) return 1;
+        if (bAreaIndex === -1) return -1;
+        return aAreaIndex - bAreaIndex;
+      }
+      
+      return 0;
+    });
+  };
+
+  // Handle area filter toggle
+  const handleAreaFilterToggle = (areaId: string) => {
+    setSelectedAreaIds(prev => {
+      if (prev.includes(areaId)) {
+        return prev.filter(id => id !== areaId);
+      } else {
+        return [...prev, areaId];
+      }
+    });
+  };
+
+  // Get area color for badges (stable color based on area ID)
+  const getAreaFilterColor = (areaId: string, isSelected: boolean) => {
+    // Create a simple hash from area ID for stable colors
+    const hash = areaId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const colors = [
+      'bg-chart-1 text-white',
+      'bg-chart-2 text-white', 
+      'bg-chart-3 text-white',
+      'bg-chart-4 text-white',
+      'bg-chart-5 text-white',
+    ];
+    
+    const baseColor = colors[hash % colors.length] || 'bg-chart-1 text-white';
+    return isSelected ? baseColor : baseColor + ' opacity-50';
+  };
+
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, areaId: string) => {
+    setDraggedAreaId(areaId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, targetAreaId: string) => {
+    e.preventDefault();
+    
+    if (!draggedAreaId || draggedAreaId === targetAreaId) {
+      setDraggedAreaId(null);
+      return;
+    }
+
+    setAreaFilterOrder(prev => {
+      const newOrder = [...prev];
+      const draggedIndex = newOrder.indexOf(draggedAreaId);
+      const targetIndex = newOrder.indexOf(targetAreaId);
+      
+      if (draggedIndex > -1 && targetIndex > -1) {
+        // Remove dragged item and insert at target position
+        newOrder.splice(draggedIndex, 1);
+        const adjustedTargetIndex = draggedIndex < targetIndex ? targetIndex - 1 : targetIndex;
+        newOrder.splice(adjustedTargetIndex, 0, draggedAreaId);
+      }
+      
+      return newOrder;
+    });
+    
+    setDraggedAreaId(null);
+  };
+
+  const sortedProjects = getSortedProjects();
+  const areasWithProjects = getAreasWithProjects();
+
+  // Initialize area filter order when areas with projects change
+  useEffect(() => {
+    const currentAreaIds = areasWithProjects.map(area => area.id);
+    setAreaFilterOrder(prev => {
+      const newOrder = Array.from(new Set([...prev, ...currentAreaIds]));
+      return newOrder.filter(id => currentAreaIds.includes(id));
+    });
+  }, [areasWithProjects.map(a => a.id).join(',')]);
+
   // Show loading state
-  if (tasksLoading || projectsLoading || goalsLoading) {
+  if (tasksLoading || projectsLoading || goalsLoading || areasLoading) {
     return (
       <div 
         className="min-h-screen flex items-center justify-center"
@@ -205,8 +332,43 @@ export default function GTDApp() {
           {/* Projects Section */}
           <CollapsibleSection title="Projects" icon="🚀">
             <div className="space-y-4">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-lg font-semibold text-foreground">Active Projects</h4>
+              <div className="flex items-center justify-between mb-4 gap-4">
+                <div className="flex items-center gap-3">
+                  <h4 className="text-lg font-semibold text-foreground">Active Projects</h4>
+                  
+                  {areasWithProjects.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      {areaFilterOrder
+                        .filter(areaId => areasWithProjects.some(area => area.id === areaId))
+                        .map(areaId => {
+                          const area = areasWithProjects.find(a => a.id === areaId);
+                          if (!area) return null;
+                          
+                          const isSelected = selectedAreaIds.includes(area.id);
+                          const isDragging = draggedAreaId === area.id;
+                          
+                          return (
+                            <button
+                              key={area.id}
+                              draggable
+                              onClick={() => handleAreaFilterToggle(area.id)}
+                              onDragStart={(e) => handleDragStart(e, area.id)}
+                              onDragOver={handleDragOver}
+                              onDrop={(e) => handleDrop(e, area.id)}
+                              className={`px-3 py-1 rounded-md text-sm font-medium transition-all hover:opacity-80 cursor-grab active:cursor-grabbing ${
+                                getAreaFilterColor(area.id, isSelected)
+                              } ${isDragging ? 'opacity-50 scale-95' : ''}`}
+                              data-testid={`filter-badge-${area.id}`}
+                              title="Click to filter, drag to reorder"
+                            >
+                              {area.title}
+                            </button>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
+                
                 <Button
                   variant="outline"
                   size="sm"
@@ -217,15 +379,19 @@ export default function GTDApp() {
                   Add Project
                 </Button>
               </div>
-              {projects.length > 0 ? (
+              {sortedProjects.length > 0 ? (
                 <div className="space-y-4">
-                  {projects.map((project: Project) => (
+                  {sortedProjects.map((project: Project) => (
                     <ProjectCard key={project.id} project={project} />
                   ))}
                 </div>
-              ) : (
+              ) : projects.length === 0 ? (
                 <div className="bg-card border border-card-border rounded-lg p-4 text-center text-muted-foreground">
                   No projects yet
+                </div>
+              ) : (
+                <div className="bg-card border border-card-border rounded-lg p-4 text-center text-muted-foreground">
+                  No projects match current filters
                 </div>
               )}
             </div>
