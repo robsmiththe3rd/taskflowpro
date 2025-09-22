@@ -221,8 +221,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const action of actions) {
         if (action.type === 'task' && action.data) {
           try {
+            // Validate that task has non-empty text
+            const taskText = action.data.text?.trim();
+            if (!taskText) {
+              console.warn('Skipping task creation: empty text field');
+              continue;
+            }
+            
             const task = await storage.createTask({
-              text: action.data.text || '',
+              text: taskText,
               category: action.data.category || 'quick_work',
               completed: false
             });
@@ -232,8 +239,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         } else if (action.type === 'project' && action.data) {
           try {
+            // Validate that project has non-empty title
+            const projectTitle = action.data.title?.trim();
+            if (!projectTitle) {
+              console.warn('Skipping project creation: empty title field');
+              continue;
+            }
+            
             const project = await storage.createProject({
-              title: action.data.title || '',
+              title: projectTitle,
               status: action.data.status || 'active',
               notes: action.data.notes || 'Created via AI assistant',
               areaId: action.data.areaId || null
@@ -244,8 +258,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         } else if (action.type === 'goal' && action.data) {
           try {
+            // Validate that goal has non-empty text
+            const goalText = action.data.text?.trim();
+            if (!goalText) {
+              console.warn('Skipping goal creation: empty text field');
+              continue;
+            }
+            
             const goal = await storage.createGoal({
-              text: action.data.text || '',
+              text: goalText,
               timeframe: action.data.timeframe || '1_2_year'
             });
             actionResults.push({ type: 'goal_created', data: goal });
