@@ -123,7 +123,7 @@ export default function TaskSection({ title, tasks, onToggleTask, category, defa
       
       {isExpanded && (
         <div className="mt-3 transition-opacity duration-300" id={`task-section-content-${getCategoryFromTitle(title)}`}>
-          <div className="bg-card border border-card-border rounded-lg overflow-hidden max-h-96 overflow-y-auto">
+          <div className="bg-card border border-card-border rounded-lg overflow-hidden">
             {tasks.map(task => (
               <TaskItem 
                 key={task.id}
