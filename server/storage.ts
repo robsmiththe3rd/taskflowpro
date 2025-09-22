@@ -119,6 +119,36 @@ export class MemStorage implements IStorage {
     ];
     
     sampleGoals.forEach(goal => this.goals.set(goal.id, goal));
+    
+    // Sample areas
+    const sampleAreas: Area[] = [
+      {
+        id: randomUUID(),
+        title: "Career & Leadership",
+        description: "Building expertise and influence in transforming work culture",
+        createdAt: new Date(),
+      },
+      {
+        id: randomUUID(),
+        title: "Personal Development", 
+        description: "Continuous learning and growth in productivity and leadership",
+        createdAt: new Date(),
+      },
+      {
+        id: randomUUID(),
+        title: "Health & Fitness",
+        description: "Physical and mental wellbeing initiatives",
+        createdAt: new Date(),
+      },
+      {
+        id: randomUUID(),
+        title: "Family & Relationships",
+        description: "Nurturing connections and building meaningful relationships",
+        createdAt: new Date(),
+      }
+    ];
+    
+    sampleAreas.forEach(area => this.areas.set(area.id, area));
   }
 
   // Task methods
@@ -163,7 +193,13 @@ export class MemStorage implements IStorage {
 
   async createProject(insertProject: InsertProject): Promise<Project> {
     const id = randomUUID();
-    const project: Project = { ...insertProject, id, createdAt: new Date(), notes: insertProject.notes ?? null };
+    const project: Project = { 
+      ...insertProject, 
+      id, 
+      createdAt: new Date(), 
+      notes: insertProject.notes ?? null,
+      areaId: insertProject.areaId ?? null
+    };
     this.projects.set(id, project);
     return project;
   }
