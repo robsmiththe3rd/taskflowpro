@@ -33,6 +33,10 @@ export default function GoalCard({ goal }: GoalCardProps) {
         return '🌟';
       case '1_2_year':
         return '🌟';
+      case 'quarterly':
+        return '🔥';
+      case 'weekly':
+        return '✅';
       default:
         return '🎯';
     }
@@ -46,6 +50,10 @@ export default function GoalCard({ goal }: GoalCardProps) {
         return 'border-l-chart-2';
       case '1_2_year':
         return 'border-l-chart-3';
+      case 'quarterly':
+        return 'border-l-chart-1';
+      case 'weekly':
+        return 'border-l-chart-5';
       default:
         return 'border-l-primary';
     }
