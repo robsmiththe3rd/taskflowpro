@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertProjectSchema, type InsertProject } from "@shared/schema";
+import { insertProjectSchema, type InsertProject, type Area } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,12 +26,17 @@ export default function AddProjectForm({ onClose }: AddProjectFormProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  const { data: areas = [] } = useQuery<Area[]>({
+    queryKey: ['/api/areas'],
+  });
+
   const form = useForm<InsertProject>({
     resolver: zodResolver(insertProjectSchema),
     defaultValues: {
       title: '',
       status: 'active',
       notes: '',
+      areaId: undefined,
     },
   });
 
@@ -105,6 +110,29 @@ export default function AddProjectForm({ onClose }: AddProjectFormProps) {
             </Select>
             {form.formState.errors.status && (
               <p className="text-sm text-destructive">{form.formState.errors.status.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="project-area">Area of Focus (Optional)</Label>
+            <Select
+              value={form.watch('areaId') || ''}
+              onValueChange={(value) => form.setValue('areaId', value || undefined)}
+            >
+              <SelectTrigger data-testid="select-project-area">
+                <SelectValue placeholder="Select area of focus" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">None</SelectItem>
+                {areas.map(area => (
+                  <SelectItem key={area.id} value={area.id}>
+                    {area.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {form.formState.errors.areaId && (
+              <p className="text-sm text-destructive">{form.formState.errors.areaId.message}</p>
             )}
           </div>
 
