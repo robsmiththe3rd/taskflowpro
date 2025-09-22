@@ -66,14 +66,23 @@ export default function AIChat() {
       setMessages(prev => [...prev, aiResponse]);
       
       // Refresh data if something was created
-      if (result.action) {
-        if (result.action.type === 'task_created') {
-          queryClient.invalidateQueries({ queryKey: ['/api/tasks'] });
-        } else if (result.action.type === 'project_created') {
-          queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
-        } else if (result.action.type === 'goal_created') {
-          queryClient.invalidateQueries({ queryKey: ['/api/goals'] });
-        }
+      if (result.actions && result.actions.length > 0) {
+        const refreshQueries = new Set<string>();
+        
+        result.actions.forEach((action: any) => {
+          if (action.type === 'task_created') {
+            refreshQueries.add('/api/tasks');
+          } else if (action.type === 'project_created') {
+            refreshQueries.add('/api/projects');
+          } else if (action.type === 'goal_created') {
+            refreshQueries.add('/api/goals');
+          }
+        });
+
+        // Invalidate all the unique query keys
+        refreshQueries.forEach(queryKey => {
+          queryClient.invalidateQueries({ queryKey: [queryKey] });
+        });
       }
     } catch (error) {
       console.error('Failed to send message:', error);
