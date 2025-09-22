@@ -18,6 +18,7 @@ export const gtdProjects = pgTable("gtd_projects", {
   title: text("title").notNull(),
   status: text("status").notNull(), // "active", "on_hold", "completed"
   notes: text("notes"),
+  areaId: varchar("area_id"), // Optional foreign key to gtdAreas
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
