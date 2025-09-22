@@ -14,6 +14,7 @@ import AddProjectForm from "./forms/AddProjectForm";
 import AddGoalForm from "./forms/AddGoalForm";
 import AddAreaForm from "./forms/AddAreaForm";
 import EditAreaForm from "./forms/EditAreaForm";
+import DeleteConfirmDialog from "./DeleteConfirmDialog";
 
 
 export default function GTDApp() {
@@ -26,6 +27,8 @@ export default function GTDApp() {
   const [isAddAreaDialogOpen, setIsAddAreaDialogOpen] = useState(false);
   const [isEditAreaDialogOpen, setIsEditAreaDialogOpen] = useState(false);
   const [editingArea, setEditingArea] = useState<Area | null>(null);
+  const [isDeleteAreaDialogOpen, setIsDeleteAreaDialogOpen] = useState(false);
+  const [deletingArea, setDeletingArea] = useState<Area | null>(null);
 
   // Fetch all data from the API
   const { data: tasks = [], isLoading: tasksLoading, refetch: refetchTasks } = useQuery<Task[]>({
@@ -519,8 +522,8 @@ export default function GTDApp() {
                             size="icon"
                             className="h-8 w-8 text-destructive hover:text-destructive"
                             onClick={() => {
-                              // TODO: Add delete confirmation
-                              console.log('Delete area:', area.id);
+                              setDeletingArea(area);
+                              setIsDeleteAreaDialogOpen(true);
                             }}
                             data-testid={`button-delete-area-${area.id}`}
                             title="Delete area"
@@ -596,6 +599,22 @@ export default function GTDApp() {
               onClose={() => {
                 setIsEditAreaDialogOpen(false);
                 setEditingArea(null);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDeleteAreaDialogOpen} onOpenChange={setIsDeleteAreaDialogOpen}>
+        <DialogContent>
+          {deletingArea && (
+            <DeleteConfirmDialog
+              type="area"
+              itemId={deletingArea.id}
+              itemName={deletingArea.title}
+              onClose={() => {
+                setIsDeleteAreaDialogOpen(false);
+                setDeletingArea(null);
               }}
             />
           )}

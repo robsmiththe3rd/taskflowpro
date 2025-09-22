@@ -5,7 +5,7 @@ import { DialogHeader, DialogTitle, DialogDescription, DialogContent, DialogFoot
 import { useToast } from "@/hooks/use-toast";
 
 interface DeleteConfirmDialogProps {
-  type: 'task' | 'project' | 'goal';
+  type: 'task' | 'project' | 'goal' | 'area';
   itemId: string;
   itemName: string;
   onClose: () => void;
