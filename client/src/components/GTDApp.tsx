@@ -168,6 +168,48 @@ export default function GTDApp() {
   const sortedProjects = getSortedProjects();
   const areasWithProjects = getAreasWithProjects();
 
+  // Group projects by area for visual grouping when multiple areas are selected
+  const getGroupedProjects = () => {
+    // Only group when multiple areas are selected
+    if (selectedAreaIds.length <= 1) {
+      return { shouldGroup: false, groups: [] };
+    }
+
+    const groups: Array<{ areaId: string | null; areaTitle: string; projects: Project[]; areaColor: string }> = [];
+    
+    // Create groups based on areaFilterOrder for selected areas
+    for (const areaId of areaFilterOrder) {
+      if (selectedAreaIds.includes(areaId)) {
+        const area = areas.find(a => a.id === areaId);
+        const areaProjects = sortedProjects.filter(p => p.areaId === areaId);
+        
+        if (areaProjects.length > 0 && area) {
+          groups.push({
+            areaId,
+            areaTitle: area.title,
+            projects: areaProjects,
+            areaColor: getAreaFilterColor(areaId, true).split(' ')[0] // Extract just the bg color
+          });
+        }
+      }
+    }
+    
+    // Add projects without area if any
+    const projectsWithoutArea = sortedProjects.filter(p => !p.areaId);
+    if (projectsWithoutArea.length > 0) {
+      groups.unshift({
+        areaId: null,
+        areaTitle: 'No Area',
+        projects: projectsWithoutArea,
+        areaColor: 'bg-muted'
+      });
+    }
+    
+    return { shouldGroup: true, groups };
+  };
+
+  const { shouldGroup, groups } = getGroupedProjects();
+
   // Initialize area filter order when areas with projects change
   useEffect(() => {
     const currentAreaIds = areasWithProjects.map(area => area.id);
@@ -380,11 +422,32 @@ export default function GTDApp() {
                 </Button>
               </div>
               {sortedProjects.length > 0 ? (
-                <div className="space-y-4">
-                  {sortedProjects.map((project: Project) => (
-                    <ProjectCard key={project.id} project={project} />
-                  ))}
-                </div>
+                shouldGroup ? (
+                  <div className="space-y-6">
+                    {groups.map((group) => (
+                      <div key={group.areaId || 'no-area'} className="space-y-3">
+                        <div className="flex items-center gap-2 pb-2 border-b border-border">
+                          <div className={`w-3 h-3 rounded-full ${group.areaColor}`}></div>
+                          <h4 className="font-medium text-foreground">
+                            {group.areaTitle}
+                          </h4>
+                          <span className="text-sm text-muted-foreground">({group.projects.length})</span>
+                        </div>
+                        <div className="space-y-4 pl-5">
+                          {group.projects.map((project: Project) => (
+                            <ProjectCard key={project.id} project={project} />
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {sortedProjects.map((project: Project) => (
+                      <ProjectCard key={project.id} project={project} />
+                    ))}
+                  </div>
+                )
               ) : projects.length === 0 ? (
                 <div className="bg-card border border-card-border rounded-lg p-4 text-center text-muted-foreground">
                   No projects yet
