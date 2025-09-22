@@ -177,6 +177,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/areas/reorder", async (req, res) => {
+    try {
+      const { areaOrders } = req.body;
+      if (!Array.isArray(areaOrders)) {
+        return res.status(400).json({ error: "areaOrders must be an array" });
+      }
+      
+      // Validate each area order object
+      for (const item of areaOrders) {
+        if (!item.id || typeof item.order !== 'number') {
+          return res.status(400).json({ error: "Each area order must have id and order (number)" });
+        }
+      }
+      
+      await storage.reorderAreas(areaOrders);
+      res.status(200).json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to reorder areas" });
+    }
+  });
+
   // AI Chat endpoint
   app.post("/api/ai/chat", async (req, res) => {
     try {

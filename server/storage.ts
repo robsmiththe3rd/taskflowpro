@@ -22,6 +22,7 @@ export interface IStorage {
   createArea(area: InsertArea): Promise<Area>;
   updateArea(id: string, updates: Partial<Area>): Promise<Area>;
   deleteArea(id: string): Promise<void>;
+  reorderAreas(areaOrders: { id: string; order: number }[]): Promise<void>;
   
   // Goals
   getGoals(): Promise<Goal[]>;
@@ -126,24 +127,28 @@ export class MemStorage implements IStorage {
         id: randomUUID(),
         title: "Career & Leadership",
         description: "Building expertise and influence in transforming work culture",
+        order: 1,
         createdAt: new Date(),
       },
       {
         id: randomUUID(),
         title: "Personal Development", 
         description: "Continuous learning and growth in productivity and leadership",
+        order: 2,
         createdAt: new Date(),
       },
       {
         id: randomUUID(),
         title: "Health & Fitness",
         description: "Physical and mental wellbeing initiatives",
+        order: 3,
         createdAt: new Date(),
       },
       {
         id: randomUUID(),
         title: "Family & Relationships",
         description: "Nurturing connections and building meaningful relationships",
+        order: 4,
         createdAt: new Date(),
       }
     ];
@@ -218,12 +223,20 @@ export class MemStorage implements IStorage {
 
   // Area methods
   async getAreas(): Promise<Area[]> {
-    return Array.from(this.areas.values()).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return Array.from(this.areas.values()).sort((a, b) => a.order - b.order);
   }
 
   async createArea(insertArea: InsertArea): Promise<Area> {
     const id = randomUUID();
-    const area: Area = { ...insertArea, id, createdAt: new Date(), description: insertArea.description ?? null };
+    // Get the highest order value and increment by 1
+    const maxOrder = Math.max(0, ...Array.from(this.areas.values()).map(a => a.order));
+    const area: Area = { 
+      ...insertArea, 
+      id, 
+      order: insertArea.order ?? maxOrder + 1,
+      createdAt: new Date(), 
+      description: insertArea.description ?? null 
+    };
     this.areas.set(id, area);
     return area;
   }
@@ -238,6 +251,16 @@ export class MemStorage implements IStorage {
 
   async deleteArea(id: string): Promise<void> {
     this.areas.delete(id);
+  }
+
+  async reorderAreas(areaOrders: { id: string; order: number }[]): Promise<void> {
+    // Update the order for each area in memory
+    for (const { id, order } of areaOrders) {
+      const area = this.areas.get(id);
+      if (area) {
+        this.areas.set(id, { ...area, order });
+      }
+    }
   }
 
   // Goal methods
@@ -338,11 +361,19 @@ export class DatabaseStorage implements IStorage {
 
   // Area methods
   async getAreas(): Promise<Area[]> {
-    return await db.select().from(gtdAreas).orderBy(gtdAreas.createdAt);
+    return await db.select().from(gtdAreas).orderBy(gtdAreas.order);
   }
 
   async createArea(insertArea: InsertArea): Promise<Area> {
-    const [area] = await db.insert(gtdAreas).values(insertArea).returning();
+    // If no order is specified, get the highest order and increment
+    let areaData = insertArea;
+    if (insertArea.order === undefined || insertArea.order === null) {
+      const areas = await db.select().from(gtdAreas).orderBy(gtdAreas.order);
+      const maxOrder = areas.length > 0 ? Math.max(...areas.map(a => a.order)) : 0;
+      areaData = { ...insertArea, order: maxOrder + 1 };
+    }
+    
+    const [area] = await db.insert(gtdAreas).values(areaData).returning();
     return area;
   }
 
@@ -358,6 +389,15 @@ export class DatabaseStorage implements IStorage {
 
   async deleteArea(id: string): Promise<void> {
     await db.delete(gtdAreas).where(eq(gtdAreas.id, id));
+  }
+
+  async reorderAreas(areaOrders: { id: string; order: number }[]): Promise<void> {
+    // Update all areas with their new order values in a transaction
+    for (const { id, order } of areaOrders) {
+      await db.update(gtdAreas)
+        .set({ order })
+        .where(eq(gtdAreas.id, id));
+    }
   }
 
   // Goal methods
