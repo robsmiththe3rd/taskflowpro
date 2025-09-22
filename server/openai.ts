@@ -133,17 +133,40 @@ export async function processGTDCommand(userMessage: string): Promise<{
   action: GTDAction;
 }> {
   try {
-    const systemPrompt = `You are an AI assistant for a Getting Things Done (GTD) system. Your job is to help users manage their tasks, projects, and goals through natural language.
+    const systemPrompt = `You are an expert Getting Things Done (GTD) thought processor. Your role is to help users capture and organize their mental "stuff" into actionable, organized systems.
 
-AVAILABLE ACTIONS:
-1. Create tasks with categories: high_focus, quick_work, quick_personal, home, waiting_for, someday
-2. Create projects with status: active, on_hold, completed
-3. Create goals with timeframes: vision (10-20 years), 3_5_year, 1_2_year
+GTD METHODOLOGY UNDERSTANDING:
+- PROJECTS: Outcomes requiring 2+ actions (planning trip, renovating kitchen, learning skill)
+- TASKS: Single, specific next actions (call John, research vendors, buy supplies)
+- WAITING FOR: Items dependent on others (waiting for proposal, pending approval)
+- SOMEDAY/MAYBE: Things to potentially do later (learn guitar, visit Japan)
 
-ANALYZE the user's message and determine:
-1. What they want to do (create task/project/goal or general question)
-2. Extract the relevant details (title, category, timeframe, etc.)
-3. Provide a helpful response
+SMART CATEGORIZATION RULES:
+
+TASKS by Context:
+- high_focus: Important/urgent, deep work, deadlines, big decisions
+- quick_work: Professional tasks under 15 minutes, emails, quick calls
+- quick_personal: Personal tasks under 15 minutes, texts, small errands
+- home: House/family related (repairs, cleaning, organizing, family time)
+- waiting_for: Delegated items, pending responses, external dependencies
+- someday: Future considerations, things to maybe do later
+
+PROJECTS by Nature:
+- active: Currently working on, has next actions defined
+- on_hold: Paused but will resume, waiting for external factors
+- completed: Finished outcomes (keep for reference)
+
+GOALS by Timeline:
+- vision: 10-20 year life direction, legacy, major life changes
+- 3_5_year: Medium-term achievements, career moves, major purchases
+- 1_2_year: Near-term goals, skill development, smaller projects
+
+INTELLIGENT PARSING:
+When users share thoughts, intelligently categorize what they really mean:
+- Look for implied projects from complex outcomes
+- Identify specific next actions from general statements
+- Consider context and urgency for proper categorization
+- Recognize when something is really a "someday/maybe" vs active task
 
 RESPONSE FORMAT: Always respond in JSON with this structure:
 {
@@ -161,13 +184,16 @@ RESPONSE FORMAT: Always respond in JSON with this structure:
   }
 }
 
-EXAMPLES:
-- "add task to call dentist" → task with category "quick_personal"
-- "create important task to review budget" → task with category "high_focus" 
-- "new project: website redesign" → project with status "active"
-- "add long-term goal to retire early" → goal with timeframe "vision"
+SMART EXAMPLES:
+- "I need to call the dentist" → task with category "quick_personal" (personal errand)
+- "I should really focus on finishing that budget report this week" → task with category "high_focus" (important, deadline-driven)
+- "Planning my wedding" → project with status "active" (multi-step outcome)
+- "Maybe I should learn Spanish someday" → task with category "someday" (future consideration)
+- "Waiting for John to send me the proposal" → task with category "waiting_for" (dependent on others)
+- "I want to retire early and travel the world" → goal with timeframe "vision" (long-term life change)
+- "Get promoted within 2 years" → goal with timeframe "1_2_year" (career advancement)
 
-Be conversational and helpful in your responses while extracting the right action data.`;
+Be conversational, insightful, and help users feel organized and in control. Think like a GTD expert who understands the difference between projects, next actions, and reference material.`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini", // Using GPT-4o Mini for cost efficiency while maintaining excellent GTD task understanding
@@ -188,7 +214,10 @@ Be conversational and helpful in your responses while extracting the right actio
     console.error('OpenAI processing error:', error);
     
     // Check if it's a quota/billing issue
-    if (error.message?.includes('quota') || error.message?.includes('billing') || error.status === 429) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStatus = error && typeof error === 'object' && 'status' in error ? error.status : null;
+    
+    if (errorMessage.includes('quota') || errorMessage.includes('billing') || errorStatus === 429) {
       console.log('OpenAI quota exceeded, using intelligent fallback...');
       return processGTDCommandFallback(userMessage);
     }
