@@ -9,6 +9,7 @@ import GoalCard from "./GoalCard";
 import AIChat from "./AIChat";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import AddProjectForm from "./forms/AddProjectForm";
 import AddGoalForm from "./forms/AddGoalForm";
@@ -489,18 +490,18 @@ export default function GTDApp() {
               </div>
               
               {areas.length > 0 ? (
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-4">
                   {areas.map((area) => (
-                    <div key={area.id} className="bg-card border border-card-border rounded-lg p-4 group hover-elevate">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-foreground mb-2" data-testid={`area-title-${area.id}`}>
+                    <Card key={area.id} className="group hover-elevate transition-all duration-200">
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <div className="space-y-1 flex-1 min-w-0">
+                          <CardTitle className="text-lg font-semibold" data-testid={`area-title-${area.id}`}>
                             {area.title}
-                          </h4>
+                          </CardTitle>
                           {area.description && (
-                            <p className="text-sm text-muted-foreground" data-testid={`area-description-${area.id}`}>
+                            <CardDescription data-testid={`area-description-${area.id}`}>
                               {area.description}
-                            </p>
+                            </CardDescription>
                           )}
                         </div>
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -531,17 +532,19 @@ export default function GTDApp() {
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
-                      </div>
-                    </div>
+                      </CardHeader>
+                    </Card>
                   ))}
                 </div>
               ) : (
-                <div className="bg-card border border-card-border rounded-lg p-8 text-center text-muted-foreground">
-                  <div className="space-y-2">
-                    <p>No areas of focus yet</p>
-                    <p className="text-sm">Areas help you organize projects and maintain clarity on different life domains.</p>
-                  </div>
-                </div>
+                <Card className="text-center text-muted-foreground">
+                  <CardContent className="p-8">
+                    <div className="space-y-2">
+                      <p>No areas of focus yet</p>
+                      <p className="text-sm">Areas help you organize projects and maintain clarity on different life domains.</p>
+                    </div>
+                  </CardContent>
+                </Card>
               )}
             </div>
           </CollapsibleSection>
