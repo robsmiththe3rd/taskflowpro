@@ -214,47 +214,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Use OpenAI to process the GTD command
-      const { response: aiResponse, action } = await processGTDCommand(message);
-      let actionResult = null;
+      const { response: aiResponse, actions } = await processGTDCommand(message);
+      const actionResults = [];
 
-      // Execute the action if one was determined
-      if (action.type === 'task' && action.data) {
-        try {
-          const task = await storage.createTask({
-            text: action.data.text || '',
-            category: action.data.category || 'quick_work',
-            completed: false
-          });
-          actionResult = { type: 'task_created', data: task };
-        } catch (error) {
-          console.error('Task creation error:', error);
-        }
-      } else if (action.type === 'project' && action.data) {
-        try {
-          const project = await storage.createProject({
-            title: action.data.title || '',
-            status: action.data.status || 'active',
-            notes: action.data.notes || 'Created via AI assistant'
-          });
-          actionResult = { type: 'project_created', data: project };
-        } catch (error) {
-          console.error('Project creation error:', error);
-        }
-      } else if (action.type === 'goal' && action.data) {
-        try {
-          const goal = await storage.createGoal({
-            text: action.data.text || '',
-            timeframe: action.data.timeframe || '1_2_year'
-          });
-          actionResult = { type: 'goal_created', data: goal };
-        } catch (error) {
-          console.error('Goal creation error:', error);
+      // Execute all actions
+      for (const action of actions) {
+        if (action.type === 'task' && action.data) {
+          try {
+            const task = await storage.createTask({
+              text: action.data.text || '',
+              category: action.data.category || 'quick_work',
+              completed: false
+            });
+            actionResults.push({ type: 'task_created', data: task });
+          } catch (error) {
+            console.error('Task creation error:', error);
+          }
+        } else if (action.type === 'project' && action.data) {
+          try {
+            const project = await storage.createProject({
+              title: action.data.title || '',
+              status: action.data.status || 'active',
+              notes: action.data.notes || 'Created via AI assistant',
+              areaId: action.data.areaId || null
+            });
+            actionResults.push({ type: 'project_created', data: project });
+          } catch (error) {
+            console.error('Project creation error:', error);
+          }
+        } else if (action.type === 'goal' && action.data) {
+          try {
+            const goal = await storage.createGoal({
+              text: action.data.text || '',
+              timeframe: action.data.timeframe || '1_2_year'
+            });
+            actionResults.push({ type: 'goal_created', data: goal });
+          } catch (error) {
+            console.error('Goal creation error:', error);
+          }
         }
       }
 
       res.json({
         message: aiResponse,
-        action: actionResult
+        actions: actionResults
       });
     } catch (error) {
       console.error('AI chat error:', error);

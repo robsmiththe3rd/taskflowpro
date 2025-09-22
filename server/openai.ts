@@ -20,14 +20,17 @@ export interface GTDAction {
     timeframe?: string;
     status?: string;
     notes?: string;
+    areaId?: string;
   };
 }
 
-// Intelligent fallback processing when OpenAI is unavailable
-function processGTDCommandFallback(userMessage: string): {
+export interface GTDResponse {
   response: string;
-  action: GTDAction;
-} {
+  actions: GTDAction[];
+}
+
+// Intelligent fallback processing when OpenAI is unavailable
+function processGTDCommandFallback(userMessage: string): GTDResponse {
   const message = userMessage.toLowerCase();
   
   // Task patterns
@@ -65,7 +68,7 @@ function processGTDCommandFallback(userMessage: string): {
     
     return {
       response: `I've created a task "${taskText}" in your ${category.replace('_', ' ')} category. Even though I'm running in backup mode, I can still help you stay organized!`,
-      action: { type: 'task', data: { text: taskText, category } }
+      actions: [{ type: 'task', data: { text: taskText, category } }]
     };
   }
   
@@ -87,7 +90,7 @@ function processGTDCommandFallback(userMessage: string): {
     
     return {
       response: `I've created a new project "${projectTitle}" for you. I'm currently running in backup mode, but your GTD system is fully functional!`,
-      action: { type: 'project', data: { title: projectTitle, status: 'active', notes: 'Created via AI assistant (backup mode)' } }
+      actions: [{ type: 'project', data: { title: projectTitle, status: 'active', notes: 'Created via AI assistant (backup mode)' } }]
     };
   }
   
@@ -117,83 +120,79 @@ function processGTDCommandFallback(userMessage: string): {
     
     return {
       response: `I've added "${goalText}" as a ${timeframe.replace('_', '-')} goal. I'm operating in backup mode right now, but your goals are safely stored!`,
-      action: { type: 'goal', data: { text: goalText, timeframe } }
+      actions: [{ type: 'goal', data: { text: goalText, timeframe } }]
     };
   }
   
   // General helpful response
   return {
     response: "I'm currently operating in backup mode due to temporary API limitations, but I can still help you create tasks, projects, and goals! Try saying things like 'I need to call the dentist' or 'create project: website redesign'.",
-    action: { type: 'none' }
+    actions: []
   };
 }
 
-export async function processGTDCommand(userMessage: string): Promise<{
-  response: string;
-  action: GTDAction;
-}> {
+export async function processGTDCommand(userMessage: string): Promise<GTDResponse> {
   try {
-    const systemPrompt = `You are an expert Getting Things Done (GTD) thought processor. Your role is to help users capture and organize their mental "stuff" into actionable, organized systems.
+    const systemPrompt = `You are a proactive GTD expert assistant that helps users organize their thoughts into actionable systems. Be decisive, transparent, and create multiple items when needed.
 
-GTD METHODOLOGY UNDERSTANDING:
-- PROJECTS: Outcomes requiring 2+ actions (planning trip, renovating kitchen, learning skill)
-- TASKS: Single, specific next actions (call John, research vendors, buy supplies)
-- WAITING FOR: Items dependent on others (waiting for proposal, pending approval)
-- SOMEDAY/MAYBE: Things to potentially do later (learn guitar, visit Japan)
+CORE PRINCIPLES:
+1. BE PROACTIVE: Don't ask clarifying questions unless absolutely necessary
+2. BE TRANSPARENT: Always clearly state what you're creating
+3. CREATE MULTIPLE ITEMS: Users often need both projects AND tasks in one request
+4. BE CONTEXT-AWARE: Understand relationships between related items
 
-SMART CATEGORIZATION RULES:
+GTD METHODOLOGY:
+- PROJECTS: Outcomes requiring 2+ actions (decide on going to celebration, plan vacation)
+- TASKS: Single, specific next actions (look at flights, call someone, research options)
+- GOALS: Aspirational outcomes (vision, 3-5 year, 1-2 year timeframes)
 
+SMART CATEGORIZATION:
 TASKS by Context:
-- high_focus: Important/urgent, deep work, deadlines, big decisions
-- quick_work: Professional tasks under 15 minutes, emails, quick calls
-- quick_personal: Personal tasks under 15 minutes, texts, small errands
-- home: House/family related (repairs, cleaning, organizing, family time)
-- waiting_for: Delegated items, pending responses, external dependencies
-- someday: Future considerations, things to maybe do later
+- high_focus: Important decisions, deep work, urgent deadlines
+- quick_work: Professional tasks <15 min (emails, quick calls, research)
+- quick_personal: Personal tasks <15 min (texts, small errands, appointments)
+- home: House/family related (repairs, cleaning, family activities)
+- waiting_for: Delegated items, pending responses
+- someday: Future considerations, "maybe" items
 
-PROJECTS by Nature:
-- active: Currently working on, has next actions defined
-- on_hold: Paused but will resume, waiting for external factors
-- completed: Finished outcomes (keep for reference)
+PROJECTS by Status:
+- active: Currently working on with defined next actions
+- on_hold: Paused, waiting for external factors
 
-GOALS by Timeline:
-- vision: 10-20 year life direction, legacy, major life changes
-- 3_5_year: Medium-term achievements, career moves, major purchases
-- 1_2_year: Near-term goals, skill development, smaller projects
+INTELLIGENT PARSING EXAMPLES:
+Input: "project: decide on going to Karrah's celebration of life. I need to look at flights and talk to Maureen"
+→ CREATE: 1 project + 2 tasks
+→ RESPONSE: "I've created a project 'Decide on going to Karrah's celebration of life' and added two tasks: 'Look at flights to Syracuse' (quick work) and 'Talk to Maureen about celebration' (quick personal)."
 
-INTELLIGENT PARSING:
-When users share thoughts, intelligently categorize what they really mean:
-- Look for implied projects from complex outcomes
-- Identify specific next actions from general statements
-- Consider context and urgency for proper categorization
-- Recognize when something is really a "someday/maybe" vs active task
+Input: "I need to plan my vacation to Italy next summer"
+→ CREATE: 1 project + related tasks
+→ RESPONSE: "I've created a project 'Plan vacation to Italy' and added initial tasks like 'Research Italian destinations' and 'Check passport expiration'."
 
-RESPONSE FORMAT: Always respond in JSON with this structure:
+RESPONSE FORMAT (JSON):
 {
-  "response": "Your helpful response to the user",
-  "action": {
-    "type": "task|project|goal|none",
-    "data": {
-      "text": "for tasks and goals",
-      "title": "for projects", 
-      "category": "for tasks only",
-      "timeframe": "for goals only",
-      "status": "for projects only",
-      "notes": "optional for projects"
+  "response": "Clear, transparent explanation of what was created",
+  "actions": [
+    {
+      "type": "project|task|goal",
+      "data": {
+        "title": "for projects",
+        "text": "for tasks and goals",
+        "category": "for tasks only",
+        "timeframe": "for goals only", 
+        "status": "for projects only",
+        "notes": "optional context"
+      }
     }
-  }
+  ]
 }
 
-SMART EXAMPLES:
-- "I need to call the dentist" → task with category "quick_personal" (personal errand)
-- "I should really focus on finishing that budget report this week" → task with category "high_focus" (important, deadline-driven)
-- "Planning my wedding" → project with status "active" (multi-step outcome)
-- "Maybe I should learn Spanish someday" → task with category "someday" (future consideration)
-- "Waiting for John to send me the proposal" → task with category "waiting_for" (dependent on others)
-- "I want to retire early and travel the world" → goal with timeframe "vision" (long-term life change)
-- "Get promoted within 2 years" → goal with timeframe "1_2_year" (career advancement)
+TRANSPARENCY RULES:
+- Always state exactly what you created: "I've created...", "I've added..."
+- Mention categories/contexts: "in your quick work list", "as a high focus task"
+- Explain reasoning when helpful: "since this requires coordination"
+- Use active voice: "I've created" not "A project has been created"
 
-Be conversational, insightful, and help users feel organized and in control. Think like a GTD expert who understands the difference between projects, next actions, and reference material.`;
+Be confident, helpful, and make users feel organized and in control!`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini", // Using GPT-4o Mini for cost efficiency while maintaining excellent GTD task understanding
@@ -208,7 +207,7 @@ Be conversational, insightful, and help users feel organized and in control. Thi
     
     return {
       response: result.response || "I understand your request. Let me help you with that.",
-      action: result.action || { type: 'none' }
+      actions: result.actions || []
     };
   } catch (error) {
     console.error('OpenAI processing error:', error);
