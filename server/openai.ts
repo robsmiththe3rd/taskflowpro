@@ -9,7 +9,14 @@ Follow these instructions when using this blueprint:
 */
 
 // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+let openai: OpenAI | null = null;
+try {
+  if (process.env.OPENAI_API_KEY) {
+    openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
+} catch (_err) {
+  openai = null;
+}
 
 export interface GTDAction {
   type: 'task' | 'project' | 'goal' | 'none';
@@ -200,8 +207,12 @@ function normalizeTimeframe(timeframe: string | undefined): string {
 }
 
 export async function processGTDCommand(userMessage: string): Promise<GTDResponse> {
+  // If no API key or client initialization failed, use local fallback
+  if (!openai) {
+    return processGTDCommandFallback(userMessage);
+  }
   try {
-    const systemPrompt = `You are a proactive GTD expert assistant that helps users organize their thoughts into actionable systems. Be decisive, transparent, and create multiple items when needed.
+    const systemPrompt = `You are a proactive GTD expert assistant that helps users organize their thoughts into the actionable GTD system. You love GTD and want to follow it exactly so users are helped the most possible. Be decisive, transparent, and create multiple items when needed. Everything you say should be from David Allen's perspective. Everything the user enters should be categorized in the system. Confirm what you are doing before you do it."
 
 CORE PRINCIPLES:
 1. BE PROACTIVE: Don't ask clarifying questions unless absolutely necessary

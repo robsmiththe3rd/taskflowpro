@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DialogHeader, DialogTitle, DialogContent, DialogFooter } from "@/components/ui/dialog";
+import { DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
 interface AddGoalFormProps {
@@ -73,7 +73,6 @@ export default function AddGoalForm({ onClose, defaultTimeframe = '1_2_year' }: 
       <DialogHeader>
         <DialogTitle>Add New Goal</DialogTitle>
       </DialogHeader>
-      <DialogContent>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="goal-text">Goal Description</Label>
@@ -109,20 +108,25 @@ export default function AddGoalForm({ onClose, defaultTimeframe = '1_2_year' }: 
               <p className="text-sm text-destructive">{form.formState.errors.timeframe.message}</p>
             )}
           </div>
-        </form>
-      </DialogContent>
-      <DialogFooter>
-        <Button variant="outline" onClick={onClose} data-testid="button-cancel">
-          Cancel
-        </Button>
-        <Button 
-          onClick={form.handleSubmit(handleSubmit)}
-          disabled={isSubmitting}
-          data-testid="button-create-goal"
-        >
-          {isSubmitting ? 'Creating...' : 'Create Goal'}
-        </Button>
-      </DialogFooter>
+       
+          <DialogFooter className="gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            data-testid="button-cancel"
+          >
+            Cancel
+          </Button>
+          <Button 
+            type="submit"
+            disabled={isSubmitting}
+            data-testid="button-create-task"
+          >
+            {isSubmitting ? 'Creating...' : 'Create'}
+          </Button>
+        </DialogFooter>
+      </form>
     </>
   );
 }

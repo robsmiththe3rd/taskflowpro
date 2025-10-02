@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DialogHeader, DialogTitle, DialogContent, DialogFooter } from "@/components/ui/dialog";
+import { DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
 interface AddTaskFormProps {
@@ -74,56 +74,60 @@ export default function AddTaskForm({ onClose, defaultCategory = 'quick_work' }:
       <DialogHeader>
         <DialogTitle>Add New Task</DialogTitle>
       </DialogHeader>
-      <DialogContent>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="task-text">Task Description</Label>
-            <Input
-              id="task-text"
-              placeholder="Enter your task..."
-              {...form.register('text')}
-              data-testid="input-task-text"
-            />
-            {form.formState.errors.text && (
-              <p className="text-sm text-destructive">{form.formState.errors.text.message}</p>
-            )}
-          </div>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <div className="space-y-2">
+          <Label htmlFor="task-text">Task Description</Label>
+          <Input
+            id="task-text"
+            placeholder="Enter your task..."
+            {...form.register('text')}
+            data-testid="input-task-text"
+          />
+          {form.formState.errors.text && (
+            <p className="text-sm text-destructive">{form.formState.errors.text.message}</p>
+          )}
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="task-category">Category</Label>
-            <Select
-              value={form.watch('category')}
-              onValueChange={(value) => form.setValue('category', value)}
-            >
-              <SelectTrigger data-testid="select-task-category">
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                {taskCategories.map(category => (
-                  <SelectItem key={category.value} value={category.value}>
-                    {category.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {form.formState.errors.category && (
-              <p className="text-sm text-destructive">{form.formState.errors.category.message}</p>
-            )}
-          </div>
-        </form>
-      </DialogContent>
-      <DialogFooter>
-        <Button variant="outline" onClick={onClose} data-testid="button-cancel">
-          Cancel
-        </Button>
-        <Button 
-          onClick={form.handleSubmit(handleSubmit)}
-          disabled={isSubmitting}
-          data-testid="button-create-task"
-        >
-          {isSubmitting ? 'Creating...' : 'Create Task'}
-        </Button>
-      </DialogFooter>
+        <div className="space-y-2">
+          <Label htmlFor="task-category">Category</Label>
+          <Select
+            value={form.watch('category')}
+            onValueChange={(value) => form.setValue('category', value)}
+          >
+            <SelectTrigger data-testid="select-task-category">
+              <SelectValue placeholder="Select category" />
+            </SelectTrigger>
+            <SelectContent>
+              {taskCategories.map(category => (
+                <SelectItem key={category.value} value={category.value}>
+                  {category.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {form.formState.errors.category && (
+            <p className="text-sm text-destructive">{form.formState.errors.category.message}</p>
+          )}
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            data-testid="button-cancel"
+          >
+            Cancel
+          </Button>
+          <Button 
+            type="submit"
+            disabled={isSubmitting}
+            data-testid="button-create-task"
+          >
+            {isSubmitting ? 'Creating...' : 'Create Task'}
+          </Button>
+        </DialogFooter>
+      </form>
     </>
   );
 }

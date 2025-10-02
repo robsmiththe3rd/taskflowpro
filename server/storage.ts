@@ -1,6 +1,13 @@
 import { type User, type InsertUser, type Task, type InsertTask, type Project, type InsertProject, type Area, type InsertArea, type Goal, type InsertGoal, gtdTasks, gtdProjects, gtdAreas, gtdGoals, users } from "@shared/schema";
 import { eq } from "drizzle-orm";
-import { db } from "./db";
+// Lazy import db to avoid requiring DATABASE_URL when using in-memory storage
+let cachedDb: any | null = null;
+async function getDb() {
+  if (cachedDb) return cachedDb;
+  const mod = await import("./db");
+  cachedDb = mod.db;
+  return cachedDb;
+}
 import { randomUUID } from "crypto";
 
 // GTD Storage Interface
@@ -324,19 +331,23 @@ export class MemStorage implements IStorage {
 export class DatabaseStorage implements IStorage {
   // Task methods
   async getTasks(): Promise<Task[]> {
+    const db = await getDb();
     return await db.select().from(gtdTasks).orderBy(gtdTasks.createdAt);
   }
 
   async getTasksByProject(projectId: string): Promise<Task[]> {
+    const db = await getDb();
     return await db.select().from(gtdTasks).where(eq(gtdTasks.projectId, projectId)).orderBy(gtdTasks.createdAt);
   }
 
   async createTask(insertTask: InsertTask): Promise<Task> {
+    const db = await getDb();
     const [task] = await db.insert(gtdTasks).values(insertTask).returning();
     return task;
   }
 
   async updateTask(id: string, updates: Partial<Task>): Promise<Task> {
+    const db = await getDb();
     const [task] = await db
       .update(gtdTasks)
       .set({
@@ -350,20 +361,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteTask(id: string): Promise<void> {
+    const db = await getDb();
     await db.delete(gtdTasks).where(eq(gtdTasks.id, id));
   }
 
   // Project methods
   async getProjects(): Promise<Project[]> {
+    const db = await getDb();
     return await db.select().from(gtdProjects).orderBy(gtdProjects.createdAt);
   }
 
   async createProject(insertProject: InsertProject): Promise<Project> {
+    const db = await getDb();
     const [project] = await db.insert(gtdProjects).values(insertProject).returning();
     return project;
   }
 
   async updateProject(id: string, updates: Partial<Project>): Promise<Project> {
+    const db = await getDb();
     const [project] = await db
       .update(gtdProjects)
       .set(updates)
@@ -374,20 +389,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteProject(id: string): Promise<void> {
+    const db = await getDb();
     await db.delete(gtdProjects).where(eq(gtdProjects.id, id));
   }
 
   // Area methods
   async getAreas(): Promise<Area[]> {
+    const db = await getDb();
     return await db.select().from(gtdAreas).orderBy(gtdAreas.order);
   }
 
   async createArea(insertArea: InsertArea): Promise<Area> {
+    const db = await getDb();
     // If no order is specified, get the highest order and increment
     let areaData = insertArea;
     if (insertArea.order === undefined || insertArea.order === null) {
       const areas = await db.select().from(gtdAreas).orderBy(gtdAreas.order);
-      const maxOrder = areas.length > 0 ? Math.max(...areas.map(a => a.order)) : 0;
+      const maxOrder = areas.length > 0 ? Math.max(...(areas as Area[]).map((area: Area) => area.order)) : 0;
       areaData = { ...insertArea, order: maxOrder + 1 };
     }
     
@@ -396,6 +414,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateArea(id: string, updates: Partial<Area>): Promise<Area> {
+    const db = await getDb();
     const [area] = await db
       .update(gtdAreas)
       .set(updates)
@@ -406,12 +425,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteArea(id: string): Promise<void> {
+    const db = await getDb();
     await db.delete(gtdAreas).where(eq(gtdAreas.id, id));
   }
 
   async reorderAreas(areaOrders: { id: string; order: number }[]): Promise<void> {
     console.log('DatabaseStorage.reorderAreas called with:', areaOrders);
     try {
+      const db = await getDb();
       // Update all areas with their new order values in a transaction
       for (const { id, order } of areaOrders) {
         console.log(`Updating area ${id} to order ${order}`);
@@ -430,15 +451,18 @@ export class DatabaseStorage implements IStorage {
 
   // Goal methods
   async getGoals(): Promise<Goal[]> {
+    const db = await getDb();
     return await db.select().from(gtdGoals).orderBy(gtdGoals.createdAt);
   }
 
   async createGoal(insertGoal: InsertGoal): Promise<Goal> {
+    const db = await getDb();
     const [goal] = await db.insert(gtdGoals).values(insertGoal).returning();
     return goal;
   }
 
   async updateGoal(id: string, updates: Partial<Goal>): Promise<Goal> {
+    const db = await getDb();
     const [goal] = await db
       .update(gtdGoals)
       .set(updates)
@@ -449,24 +473,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteGoal(id: string): Promise<void> {
+    const db = await getDb();
     await db.delete(gtdGoals).where(eq(gtdGoals.id, id));
   }
 
   // Legacy user methods
   async getUser(id: string): Promise<User | undefined> {
+    const db = await getDb();
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
+    const db = await getDb();
     const [user] = await db.select().from(users).where(eq(users.username, username));
     return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
+    const db = await getDb();
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 }
 
-export const storage = new DatabaseStorage();
+// Prefer database storage when DATABASE_URL is configured; otherwise fall back to in-memory storage
+export const storage = process.env.DATABASE_URL ? new DatabaseStorage() : new MemStorage();

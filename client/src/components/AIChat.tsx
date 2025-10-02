@@ -17,7 +17,7 @@ export default function AIChat() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: "Hi! I can help you manage your GTD system. Try saying things like 'add a task to research camping options' or 'create a project for home improvement'.",
+      text: "What's on your mind? Or you ask me about GTD!",
       isUser: false,
       timestamp: new Date(),
     }
@@ -109,7 +109,7 @@ export default function AIChat() {
     <div className="bg-card border-t border-card-border flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-border bg-gradient-to-r from-chart-4 to-chart-2 text-white">
-        <h3 className="font-semibold text-center">AI Assistant</h3>
+        <h3 className="font-semibold text-center">GTD Sidekick 👊🏼</h3>
       </div>
 
       {/* Messages */}

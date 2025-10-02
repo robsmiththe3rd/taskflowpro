@@ -17,6 +17,7 @@ import AddGoalForm from "./forms/AddGoalForm";
 import AddAreaForm from "./forms/AddAreaForm";
 import EditAreaForm from "./forms/EditAreaForm";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
+import { and } from "drizzle-orm";
 
 
 export default function GTDApp() {
@@ -527,7 +528,7 @@ export default function GTDApp() {
           </CollapsibleSection>
 
           {/* Next Actions Section */}
-          <CollapsibleSection title="Next Actions" icon="⚡" defaultOpen={true}>
+          <CollapsibleSection title="Next Actions" icon="⚡" defaultOpen={false}>
             <div className="space-y-6">
               <TaskSection 
                 title="High Focus/Important"
@@ -535,7 +536,7 @@ export default function GTDApp() {
                 onToggleTask={handleToggleTask}
               />
               <TaskSection 
-                title="Quick Work"
+                title="Afternoon Work"
                 tasks={getTasksByCategory('quick_work')}
                 onToggleTask={handleToggleTask}
               />

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DialogHeader, DialogTitle, DialogContent, DialogFooter } from "@/components/ui/dialog";
+import { DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
 interface AddProjectFormProps {
@@ -76,7 +76,6 @@ export default function AddProjectForm({ onClose }: AddProjectFormProps) {
       <DialogHeader>
         <DialogTitle>Add New Project</DialogTitle>
       </DialogHeader>
-      <DialogContent>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="project-title">Project Title</Label>
@@ -149,7 +148,6 @@ export default function AddProjectForm({ onClose }: AddProjectFormProps) {
             )}
           </div>
         </form>
-      </DialogContent>
       <DialogFooter>
         <Button variant="outline" onClick={onClose} data-testid="button-cancel">
           Cancel
